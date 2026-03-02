@@ -14,8 +14,8 @@ import type {
   PuzzleDefinition,
 } from '@/core/types'
 import type { CellCoord } from '@/canvas/hit-map'
+import { getBuiltinFallbackPuzzleByTier } from '@/engine/builtin-puzzles'
 import { generatePuzzleInWorker } from '@/engine/worker-client'
-import { getFixturePuzzleByTier } from '@/test-fixtures/puzzles'
 import { useAchievementStore } from '@/store/achievement-store'
 import { useSettingsStore } from '@/store/settings-store'
 
@@ -47,6 +47,10 @@ interface GameStoreState {
 let timer = createTimer()
 const inFlightPoolGeneration = new Set<DifficultyTier>()
 let foregroundGenerationRequest = 0
+const FOREGROUND_GENERATION_TIMEOUT_MS = 1500
+const POOL_TARGET_SIZE = 2
+const POOL_MAX_SIZE = 3
+const ALL_TIERS: DifficultyTier[] = [1, 2, 3, 4, 5, 6]
 
 function createEmptyPool(): PuzzlePool {
   return {
@@ -57,6 +61,19 @@ function createEmptyPool(): PuzzlePool {
     5: [],
     6: [],
   }
+}
+
+function isSamePuzzle(left: PuzzleDefinition, right: PuzzleDefinition): boolean {
+  return left.id === right.id && left.seed === right.seed
+}
+
+function appendPuzzleToPool(
+  pool: PuzzleDefinition[],
+  puzzle: PuzzleDefinition,
+  maxSize: number,
+): PuzzleDefinition[] {
+  const deduped = pool.filter((item) => !isSamePuzzle(item, puzzle))
+  return [...deduped, puzzle].slice(-maxSize)
 }
 
 const createInitialState = () => ({
@@ -114,24 +131,49 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       generatingTier: tier,
     })
 
+    let settled = false
+    const timeoutId = setTimeout(() => {
+      if (requestId !== foregroundGenerationRequest || settled) {
+        return
+      }
+      settled = true
+      get().startGame(getBuiltinFallbackPuzzleByTier(tier))
+      get().warmupPools()
+    }, FOREGROUND_GENERATION_TIMEOUT_MS)
+
     void generatePuzzleInWorker(tier)
       .then((workerPuzzle) => {
         if (requestId !== foregroundGenerationRequest) {
           return
         }
-        const nextPuzzle = workerPuzzle ?? getFixturePuzzleByTier(tier)
+        if (settled) {
+          if (workerPuzzle) {
+            set((state) => ({
+              puzzlePool: {
+                ...state.puzzlePool,
+                [tier]: appendPuzzleToPool(state.puzzlePool[tier], workerPuzzle, POOL_MAX_SIZE),
+              },
+            }))
+          }
+          return
+        }
+
+        settled = true
+        const nextPuzzle = workerPuzzle ?? getBuiltinFallbackPuzzleByTier(tier)
         get().startGame(nextPuzzle)
         get().warmupPools()
       })
       .catch(() => {
-        if (requestId !== foregroundGenerationRequest) {
+        if (requestId !== foregroundGenerationRequest || settled) {
           return
         }
-        get().startGame(getFixturePuzzleByTier(tier))
+        settled = true
+        get().startGame(getBuiltinFallbackPuzzleByTier(tier))
         get().warmupPools()
       })
       .finally(() => {
-        if (requestId !== foregroundGenerationRequest) {
+        clearTimeout(timeoutId)
+        if (requestId !== foregroundGenerationRequest || settled) {
           return
         }
         set({
@@ -142,30 +184,26 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
   },
 
   warmupPools() {
-    const targetSize = 2
-    const maxSize = 3
-    const tiers: DifficultyTier[] = [1, 2, 3, 4, 5, 6]
-
-    for (const tier of tiers) {
+    for (const tier of ALL_TIERS) {
       const currentSize = get().puzzlePool[tier].length
-      if (currentSize >= targetSize || inFlightPoolGeneration.has(tier)) {
+      if (currentSize >= POOL_TARGET_SIZE || inFlightPoolGeneration.has(tier)) {
         continue
       }
 
       inFlightPoolGeneration.add(tier)
       void generatePuzzleInWorker(tier)
         .then((workerPuzzle) => {
-          const puzzle = workerPuzzle ?? getFixturePuzzleByTier(tier)
+          const puzzle = workerPuzzle ?? getBuiltinFallbackPuzzleByTier(tier)
           set((state) => ({
             puzzlePool: {
               ...state.puzzlePool,
-              [tier]: [...state.puzzlePool[tier], puzzle].slice(-maxSize),
+              [tier]: appendPuzzleToPool(state.puzzlePool[tier], puzzle, POOL_MAX_SIZE),
             },
           }))
         })
         .finally(() => {
           inFlightPoolGeneration.delete(tier)
-          if (get().puzzlePool[tier].length < targetSize) {
+          if (get().puzzlePool[tier].length < POOL_TARGET_SIZE) {
             get().warmupPools()
           }
         })

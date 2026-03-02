@@ -18,6 +18,7 @@
 - Multiple difficulty levels and game modes
 - Canvas-based board rendering and input handling
 - Persistence layer for progress and achievements
+- Built-in fallback puzzle bank (10 per tier) when live generation is slow
 - PWA support (installable web app)
 - Automated deployment to GitHub Pages via GitHub Actions
 
