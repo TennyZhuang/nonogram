@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Nonogram logo">
+  <defs>
+    <linearGradient id="paperLogo" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8f1de" />
+      <stop offset="100%" stop-color="#f2e2bc" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#paperLogo)" />
+  <rect x="34" y="34" width="444" height="444" rx="84" fill="none" stroke="#8a2f23" stroke-width="18" />
+  <rect x="88" y="88" width="336" height="336" rx="44" fill="#fff9eb" stroke="#c59a63" stroke-width="8" />
+  <g stroke="#5d3a1e" stroke-opacity="0.45" stroke-width="8">
+    <line x1="116" y1="116" x2="116" y2="396" />
+    <line x1="172" y1="116" x2="172" y2="396" />
+    <line x1="228" y1="116" x2="228" y2="396" />
+    <line x1="284" y1="116" x2="284" y2="396" />
+    <line x1="340" y1="116" x2="340" y2="396" />
+    <line x1="396" y1="116" x2="396" y2="396" />
+    <line x1="116" y1="116" x2="396" y2="116" />
+    <line x1="116" y1="172" x2="396" y2="172" />
+    <line x1="116" y1="228" x2="396" y2="228" />
+    <line x1="116" y1="284" x2="396" y2="284" />
+    <line x1="116" y1="340" x2="396" y2="340" />
+    <line x1="116" y1="396" x2="396" y2="396" />
+  </g>
+  <g fill="#8a2f23">
+    <rect x="236" y="124" width="40" height="40" rx="5" />
+    <rect x="180" y="180" width="40" height="40" rx="5" />
+    <rect x="236" y="180" width="40" height="40" rx="5" />
+    <rect x="292" y="180" width="40" height="40" rx="5" />
+    <rect x="124" y="236" width="40" height="40" rx="5" />
+    <rect x="180" y="236" width="40" height="40" rx="5" />
+    <rect x="236" y="236" width="40" height="40" rx="5" />
+    <rect x="292" y="236" width="40" height="40" rx="5" />
+    <rect x="348" y="236" width="40" height="40" rx="5" />
+    <rect x="180" y="292" width="40" height="40" rx="5" />
+    <rect x="236" y="292" width="40" height="40" rx="5" />
+    <rect x="292" y="292" width="40" height="40" rx="5" />
+    <rect x="236" y="348" width="40" height="40" rx="5" />
+  </g>
+  <path
+    d="M106 136 C160 72 256 60 334 94 C372 112 400 142 410 178"
+    fill="none"
+    stroke="#2b1a0f"
+    stroke-width="20"
+    stroke-linecap="round"
+  />
+  <path
+    d="M388 222 C364 290 312 334 244 350 C188 364 136 352 102 324"
+    fill="none"
+    stroke="#2b1a0f"
+    stroke-width="18"
+    stroke-linecap="round"
+  />
+  <path
+    d="M132 388 C168 362 208 362 246 388 C282 414 320 414 356 388"
+    fill="none"
+    stroke="#8a2f23"
+    stroke-width="14"
+    stroke-linecap="round"
+  />
+</svg>
