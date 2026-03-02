@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 
 import type { DifficultyTier } from '@/core/types'
-import { generatePuzzle } from '@/engine/generator'
+import { searchPuzzle } from '@/engine/search-service'
 
 interface WorkerRequest {
   requestId: number
@@ -12,7 +12,7 @@ interface WorkerRequest {
 interface WorkerResponseSuccess {
   requestId: number
   ok: true
-  puzzle: ReturnType<typeof generatePuzzle>
+  puzzle: ReturnType<typeof searchPuzzle>
 }
 
 interface WorkerResponseFailure {
@@ -26,7 +26,7 @@ type WorkerResponse = WorkerResponseSuccess | WorkerResponseFailure
 self.onmessage = (event: MessageEvent<WorkerRequest>): void => {
   try {
     const { requestId, tier, seed } = event.data
-    const puzzle = generatePuzzle(tier, seed)
+    const puzzle = searchPuzzle({ tier, seed })
     const response: WorkerResponse = { requestId, ok: true, puzzle }
     self.postMessage(response)
   } catch (error) {

@@ -49,6 +49,14 @@ npm run test:run
 npm run test:e2e
 ```
 
+## Offline Puzzle Search Benchmark
+
+Run puzzle search locally (no network required), with per-tier timing:
+
+```bash
+npm run bench:offline-search -- --count 3
+```
+
 ## Deployment
 
 Push to `main` branch and GitHub Actions will automatically deploy `dist/` to GitHub Pages.
