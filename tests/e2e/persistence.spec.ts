@@ -1,7 +1,9 @@
 import { expect, test } from '@playwright/test'
+import { skipOnboardingIfVisible } from './helpers'
 
 test('刷新后可继续上次会话', async ({ page }) => {
   await page.goto('/')
+  await skipOnboardingIfVisible(page)
   await page.getByRole('button', { name: /D1/ }).click()
   await expect(page.getByTestId('game-board-canvas')).toBeVisible()
 

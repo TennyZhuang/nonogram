@@ -1,7 +1,9 @@
 import { expect, test } from '@playwright/test'
+import { skipOnboardingIfVisible } from './helpers'
 
 test('可以选择难度并进入游戏', async ({ page }) => {
   await page.goto('/')
+  await skipOnboardingIfVisible(page)
   await page.getByRole('button', { name: /D1/ }).click()
 
   await expect(page.getByTestId('game-board-canvas')).toBeVisible()
@@ -11,6 +13,7 @@ test('可以选择难度并进入游戏', async ({ page }) => {
 
 test('模式切换按钮可切换为标空', async ({ page }) => {
   await page.goto('/')
+  await skipOnboardingIfVisible(page)
   await page.getByRole('button', { name: /D1/ }).click()
 
   const markEmptyButton = page.getByRole('button', { name: '标空' })

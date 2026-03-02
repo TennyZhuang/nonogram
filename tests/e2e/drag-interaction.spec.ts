@@ -1,7 +1,9 @@
 import { expect, test } from '@playwright/test'
+import { skipOnboardingIfVisible } from './helpers'
 
 test('在棋盘上拖动后页面保持可交互', async ({ page }) => {
   await page.goto('/')
+  await skipOnboardingIfVisible(page)
   await page.getByRole('button', { name: /D1/ }).click()
 
   const board = page.getByTestId('game-board-canvas')
@@ -26,6 +28,7 @@ test('在棋盘上拖动后页面保持可交互', async ({ page }) => {
 
 test('触摸拖动可预览多个格子', async ({ page }) => {
   await page.goto('/')
+  await skipOnboardingIfVisible(page)
   await page.getByRole('button', { name: /D1/ }).click()
 
   const board = page.getByTestId('game-board-canvas')

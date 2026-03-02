@@ -3,9 +3,10 @@ import { THEME_OPTIONS } from '@/theme/themes'
 
 interface SettingsPageProps {
   onBack: () => void
+  onOpenTutorial: () => void
 }
 
-export function SettingsPage({ onBack }: SettingsPageProps) {
+export function SettingsPage({ onBack, onOpenTutorial }: SettingsPageProps) {
   const theme = useSettingsStore((state) => state.theme)
   const setTheme = useSettingsStore((state) => state.setTheme)
   const livesEnabled = useSettingsStore((state) => state.livesEnabled)
@@ -79,6 +80,20 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
             {livesEnabled ? '已开启' : '已关闭'}
           </button>
         </div>
+      </section>
+
+      <section className="rounded-xl border border-border bg-card p-4">
+        <h2 className="text-sm font-semibold">新手引导</h2>
+        <p className="mt-1 text-xs text-muted-foreground">
+          可随时重新学习玩法说明（图文步骤）。
+        </p>
+        <button
+          type="button"
+          className="mt-3 w-full rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted"
+          onClick={onOpenTutorial}
+        >
+          重新学习引导
+        </button>
       </section>
     </main>
   )

@@ -8,9 +8,10 @@ import { normalizeThemeId } from '@/theme/themes'
 import { AchievementsPage } from '@/ui/pages/AchievementsPage'
 import { GamePage } from '@/ui/pages/GamePage'
 import { HomePage } from '@/ui/pages/HomePage'
+import { OnboardingPage } from '@/ui/pages/OnboardingPage'
 import { SettingsPage } from '@/ui/pages/SettingsPage'
 
-type AppPage = 'home' | 'game' | 'achievements' | 'settings'
+type AppPage = 'home' | 'game' | 'achievements' | 'settings' | 'onboarding'
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
@@ -27,6 +28,10 @@ function App() {
   const warmupPools = useGameStore((state) => state.warmupPools)
   const theme = useSettingsStore((state) => state.theme)
   const setTheme = useSettingsStore((state) => state.setTheme)
+  const tutorialCompleted = useSettingsStore((state) => state.tutorialCompleted)
+  const completeTutorial = useSettingsStore((state) => state.completeTutorial)
+  const hasHydrated = useSettingsStore((state) => state.hasHydrated)
+  const [onboardingReturnPage, setOnboardingReturnPage] = useState<AppPage>('home')
 
   const normalizedTheme = normalizeThemeId(theme)
 
@@ -62,6 +67,9 @@ function App() {
       }
     }
   }, [normalizedTheme])
+
+  const isManualOnboarding = page === 'onboarding'
+  const shouldShowOnboarding = isManualOnboarding || (hasHydrated && !tutorialCompleted && page === 'home')
 
   useEffect(() => {
     void hydrateFromStorage()
@@ -104,7 +112,24 @@ function App() {
     />
   )
 
-  if (page === 'game') {
+  if (shouldShowOnboarding) {
+    pageContent = (
+      <OnboardingPage
+        onSkip={() => {
+          completeTutorial()
+          if (isManualOnboarding) {
+            setPage(onboardingReturnPage)
+          }
+        }}
+        onFinish={() => {
+          completeTutorial()
+          if (isManualOnboarding) {
+            setPage(onboardingReturnPage)
+          }
+        }}
+      />
+    )
+  } else if (page === 'game') {
     pageContent = <GamePage onBackHome={() => setPage('home')} />
   } else if (page === 'achievements') {
     pageContent = (
@@ -117,7 +142,15 @@ function App() {
       />
     )
   } else if (page === 'settings') {
-    pageContent = <SettingsPage onBack={() => setPage('home')} />
+    pageContent = (
+      <SettingsPage
+        onBack={() => setPage('home')}
+        onOpenTutorial={() => {
+          setOnboardingReturnPage('settings')
+          setPage('onboarding')
+        }}
+      />
+    )
   }
 
   return (
