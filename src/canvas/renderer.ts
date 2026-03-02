@@ -154,7 +154,57 @@ function drawClues(
   activeCell: CellCoord | null,
   colors: BoardColors,
 ) {
-  const fontSize = Math.max(10, Math.floor(layout.cellSize * 0.45))
+  const resolveClueFontSize = (): number => {
+    const preferred = Math.max(10, Math.floor(layout.cellSize * 0.45))
+    const minFontSize = 8
+
+    const maxRowNumberCount = clues.rows.reduce(
+      (max, numbers) => Math.max(max, numbers.length),
+      0,
+    )
+    const maxColNumberCount = clues.cols.reduce(
+      (max, numbers) => Math.max(max, numbers.length),
+      0,
+    )
+
+    for (let candidate = preferred; candidate >= minFontSize; candidate -= 1) {
+      const candidateGap = Math.max(3, Math.floor(candidate * 0.35))
+      ctx.font = `${candidate}px ui-monospace, SFMono-Regular, Menlo, monospace`
+
+      let maxRowWidth = 0
+      for (let row = 0; row < clues.rows.length; row += 1) {
+        const numbers = clues.rows[row]
+        if (numbers.length === 0) {
+          continue
+        }
+        let rowWidth = 0
+        for (let index = 0; index < numbers.length; index += 1) {
+          rowWidth += ctx.measureText(String(numbers[index])).width
+        }
+        rowWidth += candidateGap * Math.max(0, numbers.length - 1)
+        if (rowWidth > maxRowWidth) {
+          maxRowWidth = rowWidth
+        }
+      }
+
+      const leftMostX = layout.gridOriginX - 6 - maxRowWidth
+      const topMostY =
+        layout.gridOriginY -
+        6 -
+        Math.max(0, maxColNumberCount - 1) * (candidate + 2) -
+        candidate
+
+      const fitsLeft = maxRowNumberCount === 0 || leftMostX >= 0
+      const fitsTop = maxColNumberCount === 0 || topMostY >= 0
+      if (fitsLeft && fitsTop) {
+        return candidate
+      }
+    }
+
+    return minFontSize
+  }
+
+  const fontSize = resolveClueFontSize()
   const numberGap = Math.max(3, Math.floor(fontSize * 0.35))
   ctx.font = `${fontSize}px ui-monospace, SFMono-Regular, Menlo, monospace`
   ctx.textBaseline = 'middle'
