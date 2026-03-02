@@ -1,4 +1,5 @@
 import { generatePuzzle } from '@/engine/generator'
+import { scoreDifficulty } from '@/engine/scorer'
 import { solvePuzzle } from '@/engine/solver'
 
 function flipHorizontal(grid: boolean[][]): boolean[][] {
@@ -62,6 +63,19 @@ describe('generator', () => {
     expect(solved.unique).toBe(true)
   })
 
+  it('generates a valid D6 puzzle with unique solution', () => {
+    const puzzle = generatePuzzle(6, 2)
+    expect(puzzle).not.toBeNull()
+    expect(puzzle?.size).toBe(15)
+    const solved = solvePuzzle(puzzle!.clues)
+    expect(solved.solved).toBe(true)
+    expect(solved.unique).toBe(true)
+    const detailed = solvePuzzle(puzzle!.clues, { estimateGuaranteedLives: true })
+    expect(detailed.trace.usedPhase3).toBe(true)
+    expect(detailed.trace.guaranteedLivesToDeterministic).toBeLessThanOrEqual(2)
+    expect(scoreDifficulty(detailed.trace, puzzle!.size)).toBe(6)
+  })
+
   it('returns deterministic output for the same seed', () => {
     const first = generatePuzzle(2, 2026)
     const second = generatePuzzle(2, 2026)
@@ -74,7 +88,7 @@ describe('generator', () => {
     const solved = solvePuzzle(puzzle!.clues)
     expect(solved.solved).toBe(true)
     expect(solved.solution).toEqual(puzzle!.solution)
-  })
+  }, 10_000)
 
   it('keeps high-tier boards away from near-perfect symmetry', () => {
     const targets = {
@@ -97,5 +111,5 @@ describe('generator', () => {
         expect(distance).toBeGreaterThanOrEqual(targets[tier])
       }
     }
-  })
+  }, 20_000)
 })

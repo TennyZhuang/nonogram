@@ -16,7 +16,7 @@ import {
 
 type StopHandle = () => void
 
-const TIERS: DifficultyTier[] = [1, 2, 3, 4, 5]
+const TIERS: DifficultyTier[] = [1, 2, 3, 4, 5, 6]
 
 function buildSessionRecord(): ActiveSessionRecord | null {
   const state = useGameStore.getState()
@@ -151,6 +151,7 @@ export async function hydrateFromStorage(): Promise<void> {
         3: tierPools[2],
         4: tierPools[3],
         5: tierPools[4],
+        6: tierPools[5],
       },
     }))
 

@@ -11,4 +11,12 @@ describe('DifficultySelector', () => {
     fireEvent.click(screen.getByRole('button', { name: /D3/ }))
     expect(onSelect).toHaveBeenCalledWith(3)
   })
+
+  it('renders and supports D6 tier', () => {
+    const onSelect = vi.fn()
+    render(<DifficultySelector onSelect={onSelect} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /D6/ }))
+    expect(onSelect).toHaveBeenCalledWith(6)
+  })
 })

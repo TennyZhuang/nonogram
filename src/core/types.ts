@@ -9,7 +9,7 @@ export type Board = CellState[][]
 
 export type InputMode = 'fill' | 'mark-empty'
 export type GameStatus = 'playing' | 'failed' | 'cleared'
-export type DifficultyTier = 1 | 2 | 3 | 4 | 5
+export type DifficultyTier = 1 | 2 | 3 | 4 | 5 | 6
 
 export interface PuzzleClues {
   rows: number[][]

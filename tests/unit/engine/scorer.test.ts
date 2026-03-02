@@ -9,6 +9,7 @@ function baseTrace(overrides: Partial<SolverTrace>): SolverTrace {
     usedPhase2: false,
     usedPhase3: false,
     branchNodes: 0,
+    guaranteedLivesToDeterministic: 0,
     ...overrides,
   }
 }
@@ -36,11 +37,24 @@ describe('scorer', () => {
     expect([3, 4, 5]).toContain(tier)
   })
 
-  it('maps phase3-needed traces to D5', () => {
+  it('maps phase3-needed traces with <=2 guaranteed life losses to D6', () => {
     const tier = scoreDifficulty(
       baseTrace({
         usedPhase3: true,
         branchNodes: 8,
+        guaranteedLivesToDeterministic: 1,
+      }),
+      15,
+    )
+    expect(tier).toBe(6)
+  })
+
+  it('maps phase3-needed traces without guaranteed-life evaluation to D5', () => {
+    const tier = scoreDifficulty(
+      baseTrace({
+        usedPhase3: true,
+        branchNodes: 16,
+        guaranteedLivesToDeterministic: 4,
       }),
       15,
     )

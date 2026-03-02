@@ -13,6 +13,9 @@ export function scoreDifficulty(
   }
 
   if (trace.usedPhase3) {
+    if (trace.guaranteedLivesToDeterministic <= 2) {
+      return 6
+    }
     return 5
   }
 

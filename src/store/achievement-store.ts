@@ -22,6 +22,7 @@ const defaultAchievements: AchievementItem[] = [
   { id: 'first-clear', name: '初次通关', description: '完成任意一局', unlocked: false },
   { id: 'no-mistake', name: '零失误通关', description: '无失误完成一局', unlocked: false },
   { id: 'first-d5', name: '征服 D5', description: '首次通关 D5', unlocked: false },
+  { id: 'first-d6', name: '征服 D6', description: '首次通关 D6', unlocked: false },
   { id: 'streak-3', name: '连胜 3 局', description: '连续通关 3 局', unlocked: false },
 ]
 
@@ -39,6 +40,9 @@ export const useAchievementStore = create<AchievementStoreState>((set, get) => (
       }
       if (event.tier === 5) {
         unlockedIds.push('first-d5')
+      }
+      if (event.tier === 6) {
+        unlockedIds.push('first-d6')
       }
     }
 

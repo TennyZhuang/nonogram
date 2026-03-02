@@ -53,6 +53,7 @@ function createEmptyPool(): PuzzlePool {
     3: [],
     4: [],
     5: [],
+    6: [],
   }
 }
 
@@ -103,7 +104,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
   warmupPools() {
     const targetSize = 2
     const maxSize = 3
-    const tiers: DifficultyTier[] = [1, 2, 3, 4, 5]
+    const tiers: DifficultyTier[] = [1, 2, 3, 4, 5, 6]
 
     for (const tier of tiers) {
       const currentSize = get().puzzlePool[tier].length

@@ -4,7 +4,7 @@ interface DifficultySelectorProps {
   onSelect: (tier: DifficultyTier) => void
 }
 
-const tiers: DifficultyTier[] = [1, 2, 3, 4, 5]
+const tiers: DifficultyTier[] = [1, 2, 3, 4, 5, 6]
 
 export function DifficultySelector({ onSelect }: DifficultySelectorProps) {
   return (

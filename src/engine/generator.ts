@@ -16,6 +16,7 @@ const TIER_PROFILES: Record<DifficultyTier, TierProfile> = {
   3: { size: 15, fillRatio: 0.5 },
   4: { size: 15, fillRatio: 0.45 },
   5: { size: 15, fillRatio: 0.4 },
+  6: { size: 15, fillRatio: 0.4 },
 }
 
 const TEMPLATE_10: boolean[][] = [
@@ -192,6 +193,9 @@ function getSymmetryTarget(tier: DifficultyTier): number {
   if (tier === 5) {
     return 0.2
   }
+  if (tier === 6) {
+    return 0.2
+  }
   return 0
 }
 
@@ -258,7 +262,8 @@ function diversifyHighTierGrid(
 
   const targetDistance = getSymmetryTarget(tier)
   const next = cloneGrid(grid)
-  const maxEdits = tier === 3 ? 6 : tier === 4 ? 10 : 14
+  const maxEdits =
+    tier === 3 ? 6 : tier === 4 ? 10 : 14
 
   for (let edit = 0; edit < maxEdits; edit += 1) {
     const distances = getSymmetryDistances(next)
@@ -330,8 +335,8 @@ export function generatePuzzle(
   seed = Math.floor(Math.random() * 1_000_000_000),
 ): PuzzleDefinition | null {
   const profile = TIER_PROFILES[tier]
-  const maxRetries = tier >= 3 ? 16 : 10
-  const extendedRetries = tier >= 3 ? 36 : 20
+  const maxRetries = tier >= 6 ? 12 : tier >= 3 ? 16 : 10
+  const extendedRetries = tier >= 6 ? 24 : tier >= 3 ? 36 : 20
   let fallback: PuzzleDefinition | null = null
 
   for (let attempt = 0; attempt < extendedRetries; attempt += 1) {
@@ -348,12 +353,34 @@ export function generatePuzzle(
     }
 
     const clues = extractClues(candidate)
-    const solved = solvePuzzle(clues)
+    const solved = solvePuzzle(clues, {
+      estimateGuaranteedLives: tier === 6,
+    })
     if (!solved.solved || !solved.unique || !solved.solution) {
       continue
     }
     if (!sameGrid(solved.solution, candidate)) {
       continue
+    }
+
+    if (tier === 6) {
+      const scoredTier = scoreDifficulty(solved.trace, profile.size)
+      if (scoredTier !== 6) {
+        continue
+      }
+
+      if (solved.trace.guaranteedLivesToDeterministic > 2) {
+        continue
+      }
+
+      return {
+        id: `tier-${tier}-${attemptSeed}`,
+        seed: attemptSeed,
+        size: profile.size,
+        tier,
+        solution: candidate,
+        clues,
+      }
     }
 
     const puzzle: PuzzleDefinition = {

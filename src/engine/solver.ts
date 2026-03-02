@@ -14,6 +14,7 @@ export interface SolverTrace {
   usedPhase2: boolean
   usedPhase3: boolean
   branchNodes: number
+  guaranteedLivesToDeterministic: number
 }
 
 export interface SolverResult {
@@ -21,6 +22,10 @@ export interface SolverResult {
   unique: boolean
   solution: boolean[][] | null
   trace: SolverTrace
+}
+
+interface SolvePuzzleOptions {
+  estimateGuaranteedLives?: boolean
 }
 
 interface DeductionResult {
@@ -41,6 +46,7 @@ interface CandidateCell {
 }
 
 const patternCache = new Map<string, number[][]>()
+const MAX_GUARANTEED_LIVES = 3
 
 function normalizeClue(clue: number[]): number[] {
   if (clue.length === 1 && clue[0] === 0) {
@@ -368,6 +374,19 @@ function findMostConstrainedCell(
   return candidate
 }
 
+function estimateGuaranteedLifeCostFromSearch(
+  branchNodes: number,
+  maxLives = MAX_GUARANTEED_LIVES,
+): number {
+  if (branchNodes <= 4) {
+    return 1
+  }
+  if (branchNodes <= 20) {
+    return 2
+  }
+  return maxLives + 1
+}
+
 function searchSolutions(
   board: SolveBoard,
   clues: PuzzleClues,
@@ -429,7 +448,10 @@ function searchSolutions(
   }
 }
 
-export function solvePuzzle(clues: PuzzleClues): SolverResult {
+export function solvePuzzle(
+  clues: PuzzleClues,
+  options: SolvePuzzleOptions = {},
+): SolverResult {
   const trace: SolverTrace = {
     phase1CellsSolved: 0,
     phase2CellsSolved: 0,
@@ -437,6 +459,7 @@ export function solvePuzzle(clues: PuzzleClues): SolverResult {
     usedPhase2: false,
     usedPhase3: false,
     branchNodes: 0,
+    guaranteedLivesToDeterministic: 0,
   }
 
   const size = clues.rows.length
@@ -463,6 +486,9 @@ export function solvePuzzle(clues: PuzzleClues): SolverResult {
   trace.usedPhase3 = true
   const search = searchSolutions(deduction.board, clues, 2)
   trace.branchNodes = search.nodes
+  trace.guaranteedLivesToDeterministic = options.estimateGuaranteedLives
+    ? estimateGuaranteedLifeCostFromSearch(search.nodes)
+    : MAX_GUARANTEED_LIVES + 1
 
   if (search.count === 0 || !search.firstSolution) {
     return {
