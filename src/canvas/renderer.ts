@@ -154,6 +154,7 @@ function drawClues(
   activeCell: CellCoord | null,
   colors: BoardColors,
 ) {
+  const clueEdgeSafeInset = 4
   const resolveClueFontSize = (): number => {
     const preferred = Math.max(10, Math.floor(layout.cellSize * 0.45))
     const minFontSize = 8
@@ -194,8 +195,10 @@ function drawClues(
         Math.max(0, maxColNumberCount - 1) * (candidate + 2) -
         candidate
 
-      const fitsLeft = maxRowNumberCount === 0 || leftMostX >= 0
-      const fitsTop = maxColNumberCount === 0 || topMostY >= 0
+      const fitsLeft =
+        maxRowNumberCount === 0 || leftMostX >= clueEdgeSafeInset
+      const fitsTop =
+        maxColNumberCount === 0 || topMostY >= clueEdgeSafeInset
       if (fitsLeft && fitsTop) {
         return candidate
       }
