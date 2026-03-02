@@ -30,6 +30,8 @@ export function GamePage({ onBackHome }: GamePageProps) {
 
   const lastUnlocked = useAchievementStore((state) => state.lastUnlocked)
   const clearToast = useAchievementStore((state) => state.clearToast)
+  const modeLabel = mode === 'fill' ? '填充' : '标空'
+  const modeStatus = `当前模式：${modeLabel}${timerRunning ? '' : '（已暂停）'}`
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -69,7 +71,7 @@ export function GamePage({ onBackHome }: GamePageProps) {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-3 px-3 py-3">
+    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-3 px-3 py-3 lg:max-w-6xl">
       <header className="flex items-center justify-between">
         <button
           type="button"
@@ -82,18 +84,26 @@ export function GamePage({ onBackHome }: GamePageProps) {
         <LivesDisplay lives={game.livesRemaining} />
       </header>
 
-      <Board
-        puzzle={puzzle}
-        board={game.board}
-        mode={mode}
-        onBatchCommit={batchAct}
-      />
-
-      <footer className="mt-auto pb-2">
-        <div className="mb-2 text-center text-xs text-muted-foreground">
-          当前模式：{mode === 'fill' ? '填充' : '标空'}
-          {timerRunning ? '' : '（已暂停）'}
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
+        <div className="lg:min-w-0 lg:flex-1">
+          <Board
+            puzzle={puzzle}
+            board={game.board}
+            mode={mode}
+            onBatchCommit={batchAct}
+          />
         </div>
+
+        <aside className="hidden lg:sticky lg:top-3 lg:block lg:w-44 lg:shrink-0">
+          <div className="rounded-xl border border-border bg-card p-3">
+            <div className="mb-2 text-center text-xs text-muted-foreground">{modeStatus}</div>
+            <ModeSwitch mode={mode} onChange={setMode} />
+          </div>
+        </aside>
+      </div>
+
+      <footer className="mt-auto pb-2 lg:hidden">
+        <div className="mb-2 text-center text-xs text-muted-foreground">{modeStatus}</div>
         <ModeSwitch mode={mode} onChange={setMode} />
       </footer>
 
