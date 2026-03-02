@@ -114,7 +114,11 @@ export function OnboardingPage({ onFinish, onSkip }: OnboardingPageProps) {
       {
         title: '先看线索，再下笔',
         description: '每一行和每一列的数字，告诉你连续填充块的长度。',
-        points: ['数字之间至少隔 1 个空格', '先做确定性高的行列更容易打开局面'],
+        points: [
+          '数字之间至少隔 1 个空格',
+          '完全满足的线索数字会高亮变色，方便你确认进度',
+          '先做确定性高的行列更容易打开局面',
+        ],
         illustration: <RuleIllustration />,
       },
       {
