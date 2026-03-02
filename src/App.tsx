@@ -3,11 +3,14 @@ import { useEffect, useMemo, useState } from 'react'
 import type { DifficultyTier } from '@/core/types'
 import { hydrateFromStorage, saveOnLifecycle, startAutoSave } from '@/persistence/sync'
 import { useGameStore } from '@/store/game-store'
+import { useSettingsStore } from '@/store/settings-store'
+import { normalizeThemeId } from '@/theme/themes'
 import { AchievementsPage } from '@/ui/pages/AchievementsPage'
 import { GamePage } from '@/ui/pages/GamePage'
 import { HomePage } from '@/ui/pages/HomePage'
+import { SettingsPage } from '@/ui/pages/SettingsPage'
 
-type AppPage = 'home' | 'game' | 'achievements'
+type AppPage = 'home' | 'game' | 'achievements' | 'settings'
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
@@ -22,6 +25,10 @@ function App() {
   const game = useGameStore((state) => state.game)
   const startGameByTier = useGameStore((state) => state.startGameByTier)
   const warmupPools = useGameStore((state) => state.warmupPools)
+  const theme = useSettingsStore((state) => state.theme)
+  const setTheme = useSettingsStore((state) => state.setTheme)
+
+  const normalizedTheme = normalizeThemeId(theme)
 
   const canContinue = Boolean(currentPuzzle && game)
   const buildLabel = useMemo(() => {
@@ -36,6 +43,25 @@ function App() {
   useEffect(() => {
     warmupPools()
   }, [warmupPools])
+
+  useEffect(() => {
+    if (theme !== normalizedTheme) {
+      setTheme(normalizedTheme)
+    }
+  }, [normalizedTheme, setTheme, theme])
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = normalizedTheme
+    const meta = document.querySelector('meta[name="theme-color"]')
+    if (meta) {
+      const primary = getComputedStyle(document.documentElement)
+        .getPropertyValue('--primary')
+        .trim()
+      if (primary) {
+        meta.setAttribute('content', primary)
+      }
+    }
+  }, [normalizedTheme])
 
   useEffect(() => {
     void hydrateFromStorage()
@@ -67,6 +93,7 @@ function App() {
       onContinue={() => setPage('game')}
       onSelectDifficulty={handleStartTier}
       onOpenAchievements={() => setPage('achievements')}
+      onOpenSettings={() => setPage('settings')}
       onInstall={async () => {
         if (!deferredInstallPrompt) {
           return
@@ -89,6 +116,8 @@ function App() {
         }}
       />
     )
+  } else if (page === 'settings') {
+    pageContent = <SettingsPage onBack={() => setPage('home')} />
   }
 
   return (

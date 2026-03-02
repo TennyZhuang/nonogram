@@ -3,8 +3,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createInputController } from '@/canvas/input-controller'
 import { pixelToCell, type CellCoord } from '@/canvas/hit-map'
 import { calculateBoardLayout, type BoardLayout } from '@/canvas/layout'
-import { renderBoard } from '@/canvas/renderer'
+import { getBoardColorsFromCss, renderBoard, type BoardColors } from '@/canvas/renderer'
 import type { Board as BoardState, InputMode, PuzzleDefinition } from '@/core/types'
+import { useSettingsStore } from '@/store/settings-store'
 
 interface BoardProps {
   puzzle: PuzzleDefinition
@@ -69,6 +70,7 @@ function readDebugInputEnabled(): boolean {
 }
 
 export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
+  const theme = useSettingsStore((state) => state.theme)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const controllerRef = useRef<ReturnType<typeof createInputController> | null>(null)
@@ -114,6 +116,14 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
       maxColClueLength: getMaxColClueLength(puzzle),
     })
   }, [canvasSize.height, canvasSize.width, puzzle])
+
+  const boardColors = useMemo<BoardColors>(() => {
+    if (typeof document === 'undefined') {
+      return getBoardColorsFromCss(null)
+    }
+    const themedRoot = document.querySelector(`:root[data-theme='${theme}']`)
+    return getBoardColorsFromCss(themedRoot ?? document.documentElement)
+  }, [theme])
 
   useEffect(() => {
     const container = containerRef.current
@@ -208,10 +218,11 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
       solution: puzzle.solution,
       clues: puzzle.clues,
       layout,
+      colors: boardColors,
       previewCells,
       activeCell,
     })
-  }, [activeCell, board, canvasSize.height, canvasSize.width, layout, previewCells, puzzle])
+  }, [activeCell, board, boardColors, canvasSize.height, canvasSize.width, layout, previewCells, puzzle])
 
   const updateFromSnapshot = useCallback(
     (snapshot: ReturnType<ReturnType<typeof createInputController>['getSnapshot']>) => {
