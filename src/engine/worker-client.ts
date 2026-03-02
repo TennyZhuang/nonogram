@@ -15,6 +15,7 @@ interface WorkerResponse {
 
 let workerInstance: Worker | null = null
 let nextRequestId = 1
+let workerUnavailable = false
 
 const pending = new Map<
   number,
@@ -25,7 +26,7 @@ const pending = new Map<
 >()
 
 function getWorker(): Worker | null {
-  if (typeof window === 'undefined' || typeof Worker === 'undefined') {
+  if (workerUnavailable || typeof window === 'undefined' || typeof Worker === 'undefined') {
     return null
   }
 
@@ -33,9 +34,14 @@ function getWorker(): Worker | null {
     return workerInstance
   }
 
-  workerInstance = new Worker(new URL('./worker-entry.ts', import.meta.url), {
-    type: 'module',
-  })
+  try {
+    workerInstance = new Worker(new URL('./worker-entry.ts', import.meta.url), {
+      type: 'module',
+    })
+  } catch {
+    workerUnavailable = true
+    return null
+  }
 
   workerInstance.onmessage = (event: MessageEvent<WorkerResponse>) => {
     const payload = event.data
@@ -58,6 +64,7 @@ function getWorker(): Worker | null {
       request.reject(error)
     }
     pending.clear()
+    workerInstance?.terminate()
     workerInstance = null
   }
 

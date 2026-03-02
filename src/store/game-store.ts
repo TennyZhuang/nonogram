@@ -14,7 +14,6 @@ import type {
   PuzzleDefinition,
 } from '@/core/types'
 import type { CellCoord } from '@/canvas/hit-map'
-import { generatePuzzle } from '@/engine/generator'
 import { generatePuzzleInWorker } from '@/engine/worker-client'
 import { getFixturePuzzleByTier } from '@/test-fixtures/puzzles'
 import { useAchievementStore } from '@/store/achievement-store'
@@ -28,6 +27,8 @@ interface GameStoreState {
   mode: InputMode
   elapsedMs: number
   timerRunning: boolean
+  isGeneratingPuzzle: boolean
+  generatingTier: DifficultyTier | null
   puzzlePool: PuzzlePool
   startGame: (puzzle: PuzzleDefinition) => void
   startGameByTier: (tier: DifficultyTier) => void
@@ -45,6 +46,7 @@ interface GameStoreState {
 
 let timer = createTimer()
 const inFlightPoolGeneration = new Set<DifficultyTier>()
+let foregroundGenerationRequest = 0
 
 function createEmptyPool(): PuzzlePool {
   return {
@@ -63,6 +65,8 @@ const createInitialState = () => ({
   mode: 'fill' as InputMode,
   elapsedMs: 0,
   timerRunning: false,
+  isGeneratingPuzzle: false,
+  generatingTier: null,
   puzzlePool: createEmptyPool(),
 })
 
@@ -81,24 +85,60 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
   ...createInitialState(),
 
   startGameByTier(tier) {
-    let nextPuzzle: PuzzleDefinition | null = null
     const currentPool = get().puzzlePool[tier]
     if (currentPool.length > 0) {
-      nextPuzzle = currentPool[0]
+      foregroundGenerationRequest += 1
+      const nextPuzzle = currentPool[0]
       set((state) => ({
+        isGeneratingPuzzle: false,
+        generatingTier: null,
         puzzlePool: {
           ...state.puzzlePool,
           [tier]: state.puzzlePool[tier].slice(1),
         },
       }))
+      get().startGame(nextPuzzle)
+      get().warmupPools()
+      return
     }
 
-    if (!nextPuzzle) {
-      nextPuzzle = generatePuzzle(tier) ?? getFixturePuzzleByTier(tier)
-    }
+    const requestId = foregroundGenerationRequest + 1
+    foregroundGenerationRequest = requestId
+    timer.pause()
+    set({
+      currentPuzzle: null,
+      game: null,
+      elapsedMs: 0,
+      timerRunning: false,
+      isGeneratingPuzzle: true,
+      generatingTier: tier,
+    })
 
-    get().startGame(nextPuzzle)
-    get().warmupPools()
+    void generatePuzzleInWorker(tier)
+      .then((workerPuzzle) => {
+        if (requestId !== foregroundGenerationRequest) {
+          return
+        }
+        const nextPuzzle = workerPuzzle ?? getFixturePuzzleByTier(tier)
+        get().startGame(nextPuzzle)
+        get().warmupPools()
+      })
+      .catch(() => {
+        if (requestId !== foregroundGenerationRequest) {
+          return
+        }
+        get().startGame(getFixturePuzzleByTier(tier))
+        get().warmupPools()
+      })
+      .finally(() => {
+        if (requestId !== foregroundGenerationRequest) {
+          return
+        }
+        set({
+          isGeneratingPuzzle: false,
+          generatingTier: null,
+        })
+      })
   },
 
   warmupPools() {
@@ -115,7 +155,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       inFlightPoolGeneration.add(tier)
       void generatePuzzleInWorker(tier)
         .then((workerPuzzle) => {
-          const puzzle = workerPuzzle ?? generatePuzzle(tier) ?? getFixturePuzzleByTier(tier)
+          const puzzle = workerPuzzle ?? getFixturePuzzleByTier(tier)
           set((state) => ({
             puzzlePool: {
               ...state.puzzlePool,
@@ -144,6 +184,8 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       mode: 'fill',
       elapsedMs: 0,
       timerRunning: true,
+      isGeneratingPuzzle: false,
+      generatingTier: null,
     })
   },
 
@@ -251,6 +293,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
   },
 
   clearGame() {
+    foregroundGenerationRequest += 1
     timer.pause()
     set((state) => ({
       ...createInitialState(),
@@ -261,6 +304,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
 
 export function resetGameStoreForTests(): void {
   inFlightPoolGeneration.clear()
+  foregroundGenerationRequest = 0
   timer = createTimer()
   useGameStore.setState(createInitialState())
 }

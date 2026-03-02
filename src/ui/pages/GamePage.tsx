@@ -17,6 +17,8 @@ interface GamePageProps {
 export function GamePage({ onBackHome }: GamePageProps) {
   const puzzle = useGameStore((state) => state.currentPuzzle)
   const game = useGameStore((state) => state.game)
+  const isGeneratingPuzzle = useGameStore((state) => state.isGeneratingPuzzle)
+  const generatingTier = useGameStore((state) => state.generatingTier)
   const mode = useGameStore((state) => state.mode)
   const elapsedMs = useGameStore((state) => state.elapsedMs)
   const timerRunning = useGameStore((state) => state.timerRunning)
@@ -53,6 +55,23 @@ export function GamePage({ onBackHome }: GamePageProps) {
     document.addEventListener('visibilitychange', onVisibilityChange)
     return () => document.removeEventListener('visibilitychange', onVisibilityChange)
   }, [pauseTimer, resumeTimer])
+
+  if (isGeneratingPuzzle) {
+    const tierLabel = generatingTier ? ` ${generatingTier}` : ''
+    return (
+      <main className="mx-auto flex min-h-screen w-full max-w-md flex-col items-center justify-center px-4 py-6">
+        <h1 className="text-xl font-bold">正在生成题目{tierLabel}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">复杂题目会在后台计算，UI 不会被阻塞。</p>
+        <button
+          type="button"
+          className="mt-4 rounded-md border border-border px-4 py-2 text-sm"
+          onClick={onBackHome}
+        >
+          返回首页
+        </button>
+      </main>
+    )
+  }
 
   if (!puzzle || !game) {
     return (
