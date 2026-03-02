@@ -135,6 +135,10 @@ export function GamePage({ onBackHome }: GamePageProps) {
 
       <GameClearDialog
         open={game.status === 'cleared'}
+        puzzle={puzzle}
+        board={game.board}
+        livesRemaining={game.livesRemaining}
+        maxLives={game.maxLives}
         elapsedMs={elapsedMs}
         mistakes={game.mistakes}
         onBack={onBackHome}

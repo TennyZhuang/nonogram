@@ -66,7 +66,7 @@ export async function persistNow(): Promise<void> {
 }
 
 export function startAutoSave(delayMs = 1_000): StopHandle {
-  let timeout: ReturnType<typeof setTimeout> | null = null
+  let timeout: number | null = null
 
   const schedule = () => {
     if (timeout) {
