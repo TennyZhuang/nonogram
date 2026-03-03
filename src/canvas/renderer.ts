@@ -37,7 +37,7 @@ interface SegmentAutoMarkOptions {
   board: Board
   solution: boolean[][]
   clues: PuzzleClues
-  activeCell: CellCoord | null
+  activeCells: CellCoord[]
 }
 
 const DEFAULT_COLORS: BoardColors = {
@@ -325,28 +325,39 @@ function pushLineAutoMarks(
 export function collectResolvedSegmentBoundaryCells(
   options: SegmentAutoMarkOptions,
 ): CellCoord[] {
-  const activeCell = options.activeCell
-  if (!activeCell) {
+  if (options.activeCells.length === 0) {
     return []
   }
 
   const cells: CellCoord[] = []
   const dedupe = new Set<string>()
+  const rowIndexes = new Set<number>()
+  const colIndexes = new Set<number>()
 
-  pushLineAutoMarks(cells, dedupe, {
-    axis: 'row',
-    index: activeCell.row,
-    board: options.board,
-    solution: options.solution,
-    clues: options.clues,
-  })
-  pushLineAutoMarks(cells, dedupe, {
-    axis: 'col',
-    index: activeCell.col,
-    board: options.board,
-    solution: options.solution,
-    clues: options.clues,
-  })
+  for (const activeCell of options.activeCells) {
+    rowIndexes.add(activeCell.row)
+    colIndexes.add(activeCell.col)
+  }
+
+  for (const rowIndex of rowIndexes) {
+    pushLineAutoMarks(cells, dedupe, {
+      axis: 'row',
+      index: rowIndex,
+      board: options.board,
+      solution: options.solution,
+      clues: options.clues,
+    })
+  }
+
+  for (const colIndex of colIndexes) {
+    pushLineAutoMarks(cells, dedupe, {
+      axis: 'col',
+      index: colIndex,
+      board: options.board,
+      solution: options.solution,
+      clues: options.clues,
+    })
+  }
 
   return cells
 }
