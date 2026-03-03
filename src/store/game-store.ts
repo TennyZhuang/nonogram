@@ -348,7 +348,7 @@ export function resetGameStoreForTests(): void {
   useGameStore.setState(createInitialState())
 }
 
-// Expose for E2E testing
-if (typeof window !== 'undefined') {
+// Expose for E2E testing (only when driven by automation tools like Playwright)
+if (typeof window !== 'undefined' && navigator.webdriver) {
   ;(window as unknown as Record<string, unknown>).__gameStore = useGameStore
 }

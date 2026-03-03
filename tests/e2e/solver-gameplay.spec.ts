@@ -67,14 +67,22 @@ test('用求解器完整打通一盘 D1 游戏', async ({ page }) => {
   const canvas = page.getByTestId('game-board-canvas')
   await expect(canvas).toBeVisible()
 
-  // Wait a moment for the board layout to stabilize (ResizeObserver)
-  await page.waitForTimeout(500)
+  // Wait for the game store to have a puzzle ready (deterministic wait)
+  await page.waitForFunction(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const store = (window as any).__gameStore
+    if (!store) return false
+    const state = store.getState()
+    return state.currentPuzzle !== null && state.game !== null
+  }, undefined, { timeout: 10000 })
 
   // Extract puzzle data from the Zustand store
   const puzzleData = await page.evaluate(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const store = (window as any).__gameStore
+    if (!store) throw new Error('__gameStore not found on window')
     const state = store.getState()
+    if (!state.currentPuzzle) throw new Error('currentPuzzle is null')
     const puzzle = state.currentPuzzle
     return {
       size: puzzle.size as number,
@@ -112,9 +120,12 @@ test('用求解器完整打通一盘 D1 游戏', async ({ page }) => {
   const gameState = await page.evaluate(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const store = (window as any).__gameStore
+    if (!store) throw new Error('__gameStore not found on window')
+    const state = store.getState()
+    if (!state.game) throw new Error('game state is null')
     return {
-      status: store.getState().game.status as string,
-      mistakes: store.getState().game.mistakes as number,
+      status: state.game.status as string,
+      mistakes: state.game.mistakes as number,
     }
   })
   expect(gameState.status).toBe('cleared')
