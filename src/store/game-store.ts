@@ -5,6 +5,7 @@ import {
   applyBatchAction,
   createGameState,
 } from '@/core/game-engine'
+import { calculateBoardLayout } from '@/canvas/layout'
 import { createTimer } from '@/core/timer'
 import type {
   Action,
@@ -352,7 +353,5 @@ export function resetGameStoreForTests(): void {
 if (typeof window !== 'undefined' && navigator.webdriver) {
   const win = window as unknown as Record<string, unknown>
   win.__gameStore = useGameStore
-  void import('@/canvas/layout').then((m) => {
-    win.__calculateBoardLayout = m.calculateBoardLayout
-  })
+  win.__calculateBoardLayout = calculateBoardLayout
 }
