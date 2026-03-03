@@ -9,7 +9,12 @@ import {
   renderBoard,
   type BoardColors,
 } from '@/canvas/renderer'
-import type { Board as BoardState, InputMode, PuzzleDefinition } from '@/core/types'
+import {
+  isFilledState,
+  type Board as BoardState,
+  type InputMode,
+  type PuzzleDefinition,
+} from '@/core/types'
 import { useSettingsStore } from '@/store/settings-store'
 
 interface BoardProps {
@@ -74,6 +79,27 @@ function readDebugInputEnabled(): boolean {
   return window.localStorage.getItem(DEBUG_STORAGE_KEY) === '1'
 }
 
+function collectFilledDiffAnchors(previousBoard: BoardState, nextBoard: BoardState): CellCoord[] {
+  const anchors: CellCoord[] = []
+  const rowCount = Math.min(previousBoard.length, nextBoard.length)
+
+  for (let row = 0; row < rowCount; row += 1) {
+    const previousRow = previousBoard[row] ?? []
+    const nextRow = nextBoard[row] ?? []
+    const colCount = Math.min(previousRow.length, nextRow.length)
+    for (let col = 0; col < colCount; col += 1) {
+      if (previousRow[col] === nextRow[col]) {
+        continue
+      }
+      if (isFilledState(nextRow[col])) {
+        anchors.push({ row, col })
+      }
+    }
+  }
+
+  return anchors
+}
+
 export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
   const theme = useSettingsStore((state) => state.theme)
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -83,6 +109,7 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
   const activeTouchIdRef = useRef<number | null>(null)
   const interactionLockedRef = useRef(false)
   const autoMarkAnchorsRef = useRef<CellCoord[]>([])
+  const previousBoardRef = useRef<BoardState>(board)
   const debugIndexRef = useRef(0)
 
   const [canvasSize, setCanvasSize] = useState<CanvasSize>({ width: 360, height: 620 })
@@ -334,11 +361,23 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
     }
     autoMarkAnchorsRef.current = []
 
+    const mergedAnchors = new Map<string, CellCoord>()
+    for (const anchorCell of anchorCells) {
+      mergedAnchors.set(`${anchorCell.row}:${anchorCell.col}`, anchorCell)
+    }
+    const diffAnchors = collectFilledDiffAnchors(previousBoardRef.current, board)
+    for (const diffAnchor of diffAnchors) {
+      mergedAnchors.set(`${diffAnchor.row}:${diffAnchor.col}`, diffAnchor)
+    }
+    if (mergedAnchors.size === 0) {
+      return
+    }
+
     const autoMarkCells = collectResolvedSegmentBoundaryCells({
       board,
       solution: puzzle.solution,
       clues: puzzle.clues,
-      activeCells: anchorCells,
+      activeCells: [...mergedAnchors.values()],
     })
     if (autoMarkCells.length === 0) {
       return
@@ -346,6 +385,10 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
 
     onBatchCommit(autoMarkCells, 'mark-empty')
   }, [board, onBatchCommit, puzzle.clues, puzzle.solution])
+
+  useEffect(() => {
+    previousBoardRef.current = board
+  }, [board])
 
   useEffect(() => {
     return () => {
