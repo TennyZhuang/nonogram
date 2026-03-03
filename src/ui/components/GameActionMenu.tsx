@@ -85,7 +85,7 @@ export function GameActionMenu({
             className="mt-1 w-full rounded-md px-3 py-2 text-left text-sm hover:bg-muted"
             onClick={() => handleAction(onBack)}
           >
-            返回
+            返回首页
           </button>
         </div>
       ) : null}

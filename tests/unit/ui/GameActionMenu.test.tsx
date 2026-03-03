@@ -27,7 +27,7 @@ describe('GameActionMenu', () => {
     expect(onSwitchPuzzle).toHaveBeenCalledTimes(1)
 
     fireEvent.click(screen.getByRole('button', { name: '菜单' }))
-    fireEvent.click(screen.getByRole('menuitem', { name: '返回' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: '返回首页' }))
     expect(onBack).toHaveBeenCalledTimes(1)
   })
 
