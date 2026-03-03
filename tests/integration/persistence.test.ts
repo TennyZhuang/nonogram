@@ -73,6 +73,27 @@ describe('persistence integration', () => {
     expect(unlocked).toEqual(expect.arrayContaining(['first-clear', 'no-mistake']))
   })
 
+  it('does not emit toast for achievements that are already unlocked', () => {
+    useAchievementStore.getState().checkAndUnlock({
+      type: 'game-cleared',
+      tier: 1,
+      mistakes: 0,
+      elapsedMs: 1000,
+    })
+    expect(useAchievementStore.getState().lastUnlocked?.id).toBe('first-clear')
+
+    useAchievementStore.getState().clearToast()
+    expect(useAchievementStore.getState().lastUnlocked).toBeNull()
+
+    useAchievementStore.getState().checkAndUnlock({
+      type: 'game-cleared',
+      tier: 1,
+      mistakes: 1,
+      elapsedMs: 1200,
+    })
+    expect(useAchievementStore.getState().lastUnlocked).toBeNull()
+  })
+
   it('persists and restores puzzle pools', async () => {
     useGameStore.setState((state) => ({
       ...state,
