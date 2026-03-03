@@ -18,7 +18,8 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // Do not auto-reload active game sessions when a new SW is found.
+      registerType: 'prompt',
       includeAssets: ['icons/icon-192.svg', 'icons/icon-512.svg'],
       manifest: {
         name: '数织 Nonogram',
@@ -46,6 +47,20 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
+        // Let navigation hit network first; fallback to precache only when offline.
+        navigateFallback: null,
+        directoryIndex: null,
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkOnly',
+            options: {
+              precacheFallback: {
+                fallbackURL: 'index.html',
+              },
+            },
+          },
+        ],
       },
     }),
   ],

@@ -10,6 +10,15 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 )
 
+window.addEventListener('pageshow', (event) => {
+  if (!event.persisted || !navigator.onLine) {
+    return
+  }
+
+  // Safari may restore a frozen page from bfcache; reload only when coming back online.
+  window.location.reload()
+})
+
 registerSW({
   immediate: true,
   onRegisteredSW(swUrl, registration) {
