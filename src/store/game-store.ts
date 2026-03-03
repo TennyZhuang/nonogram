@@ -347,3 +347,8 @@ export function resetGameStoreForTests(): void {
   timer = createTimer()
   useGameStore.setState(createInitialState())
 }
+
+// Expose for E2E testing
+if (typeof window !== 'undefined') {
+  ;(window as unknown as Record<string, unknown>).__gameStore = useGameStore
+}
