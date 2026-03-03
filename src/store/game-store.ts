@@ -35,7 +35,7 @@ interface GameStoreState {
   warmupPools: () => void
   setMode: (mode: InputMode) => void
   act: (action: Omit<Action, 'type'> & { type?: InputMode }) => void
-  batchAct: (cells: CellCoord[]) => void
+  batchAct: (cells: CellCoord[], mode?: InputMode) => void
   restart: () => void
   switchPuzzle: (puzzle?: PuzzleDefinition) => void
   pauseTimer: () => void
@@ -257,14 +257,15 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     })
   },
 
-  batchAct(cells) {
+  batchAct(cells, mode) {
     const state = get()
     if (!state.game || cells.length === 0) {
       return
     }
 
+    const actionMode = mode ?? state.mode
     const actions: Action[] = cells.map((cell) => ({
-      type: state.mode,
+      type: actionMode,
       row: cell.row,
       col: cell.col,
     }))

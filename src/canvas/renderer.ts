@@ -1,6 +1,10 @@
 import type { BoardLayout } from '@/canvas/layout'
 import type { CellCoord } from '@/canvas/hit-map'
-import { resolveClueProgress, type ClueProgress } from '@/canvas/clue-progress'
+import {
+  resolveClueProgress,
+  resolveLineClueSegments,
+  type ClueProgress,
+} from '@/canvas/clue-progress'
 import type { Board, CellState, PuzzleClues } from '@/core/types'
 
 export interface BoardColors {
@@ -27,6 +31,13 @@ interface RenderOptions {
   previewCells?: CellCoord[]
   activeCell?: CellCoord | null
   colors?: BoardColors
+}
+
+interface SegmentAutoMarkOptions {
+  board: Board
+  solution: boolean[][]
+  clues: PuzzleClues
+  activeCell: CellCoord | null
 }
 
 const DEFAULT_COLORS: BoardColors = {
@@ -250,6 +261,94 @@ function drawClues(
       ctx.fillText(String(numbers[i]), x, y)
     }
   }
+}
+
+function pushLineAutoMarks(
+  collection: CellCoord[],
+  dedupe: Set<string>,
+  options: {
+    axis: 'row' | 'col'
+    index: number
+    board: Board
+    solution: boolean[][]
+    clues: PuzzleClues
+  },
+) {
+  const size = options.board.length
+  if (options.index < 0 || options.index >= size) {
+    return
+  }
+
+  const line =
+    options.axis === 'row'
+      ? options.board[options.index]
+      : options.board.map((row) => row[options.index])
+  const solutionLine =
+    options.axis === 'row'
+      ? options.solution[options.index]
+      : options.solution.map((row) => row[options.index])
+  const clue =
+    options.axis === 'row'
+      ? options.clues.rows[options.index]
+      : options.clues.cols[options.index]
+
+  const segments = resolveLineClueSegments(line, solutionLine, clue)
+
+  for (const segment of segments) {
+    if (!segment.resolved) {
+      continue
+    }
+
+    const neighborIndexes = [segment.start - 1, segment.start + segment.length]
+    for (const lineIndex of neighborIndexes) {
+      if (lineIndex < 0 || lineIndex >= line.length) {
+        continue
+      }
+      if (line[lineIndex] !== 'unknown') {
+        continue
+      }
+
+      const coord: CellCoord =
+        options.axis === 'row'
+          ? { row: options.index, col: lineIndex }
+          : { row: lineIndex, col: options.index }
+      const key = `${coord.row}:${coord.col}`
+      if (dedupe.has(key)) {
+        continue
+      }
+      dedupe.add(key)
+      collection.push(coord)
+    }
+  }
+}
+
+export function collectResolvedSegmentBoundaryCells(
+  options: SegmentAutoMarkOptions,
+): CellCoord[] {
+  const activeCell = options.activeCell
+  if (!activeCell) {
+    return []
+  }
+
+  const cells: CellCoord[] = []
+  const dedupe = new Set<string>()
+
+  pushLineAutoMarks(cells, dedupe, {
+    axis: 'row',
+    index: activeCell.row,
+    board: options.board,
+    solution: options.solution,
+    clues: options.clues,
+  })
+  pushLineAutoMarks(cells, dedupe, {
+    axis: 'col',
+    index: activeCell.col,
+    board: options.board,
+    solution: options.solution,
+    clues: options.clues,
+  })
+
+  return cells
 }
 
 export function renderBoard(ctx: CanvasRenderingContext2D, options: RenderOptions): void {

@@ -11,6 +11,12 @@ interface RunSegment {
   length: number
 }
 
+export interface LineClueSegment {
+  start: number
+  length: number
+  resolved: boolean
+}
+
 export interface ClueProgress {
   rows: boolean[][]
   cols: boolean[][]
@@ -72,6 +78,37 @@ export function resolveLineClues(
   }
 
   return resolved
+}
+
+export function resolveLineClueSegments(
+  line: CellState[],
+  solutionLine: boolean[],
+  clue: number[],
+): LineClueSegment[] {
+  if (clue.length === 1 && clue[0] === 0) {
+    return []
+  }
+
+  const segments = extractRunSegments(solutionLine)
+  const resolved = resolveLineClues(line, solutionLine, clue)
+  const lineSegments: LineClueSegment[] = []
+  const checkCount = Math.min(clue.length, segments.length)
+
+  for (let index = 0; index < checkCount; index += 1) {
+    const expectedLength = clue[index]
+    const segment = segments[index]
+    if (!segment || expectedLength !== segment.length) {
+      continue
+    }
+
+    lineSegments.push({
+      start: segment.start,
+      length: segment.length,
+      resolved: resolved[index] ?? false,
+    })
+  }
+
+  return lineSegments
 }
 
 export function resolveClueProgress(

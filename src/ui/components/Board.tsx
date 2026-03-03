@@ -3,7 +3,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createInputController } from '@/canvas/input-controller'
 import { pixelToCell, type CellCoord } from '@/canvas/hit-map'
 import { calculateBoardLayout, type BoardLayout } from '@/canvas/layout'
-import { getBoardColorsFromCss, renderBoard, type BoardColors } from '@/canvas/renderer'
+import {
+  collectResolvedSegmentBoundaryCells,
+  getBoardColorsFromCss,
+  renderBoard,
+  type BoardColors,
+} from '@/canvas/renderer'
 import type { Board as BoardState, InputMode, PuzzleDefinition } from '@/core/types'
 import { useSettingsStore } from '@/store/settings-store'
 
@@ -77,6 +82,8 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
   const activePointerIdRef = useRef<number | null>(null)
   const activeTouchIdRef = useRef<number | null>(null)
   const interactionLockedRef = useRef(false)
+  const autoMarkAnchorRef = useRef<CellCoord | null>(null)
+  const autoMarkCommitKeyRef = useRef('')
   const debugIndexRef = useRef(0)
 
   const [canvasSize, setCanvasSize] = useState<CanvasSize>({ width: 360, height: 620 })
@@ -196,6 +203,11 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
   }, [layout, mode, onBatchCommit])
 
   useEffect(() => {
+    autoMarkAnchorRef.current = null
+    autoMarkCommitKeyRef.current = ''
+  }, [puzzle.id])
+
+  useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) {
       return
@@ -283,6 +295,10 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
       if (!controller) {
         return
       }
+      const snapshot = controller.getSnapshot()
+      autoMarkAnchorRef.current =
+        snapshot.activeCell ?? snapshot.previewCells[snapshot.previewCells.length - 1] ?? null
+      autoMarkCommitKeyRef.current = ''
       updateFromSnapshot(controller.pointerUp(point))
       setInteractionLock(false)
       appendDebugLog('preview-commit', {
@@ -298,10 +314,41 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
     if (!controller) {
       return
     }
+    const snapshot = controller.getSnapshot()
+    autoMarkAnchorRef.current =
+      snapshot.activeCell ?? snapshot.previewCells[snapshot.previewCells.length - 1] ?? null
+    autoMarkCommitKeyRef.current = ''
     updateFromSnapshot(controller.pointerCancel())
     setInteractionLock(false)
     appendDebugLog('preview-cancel')
   }, [appendDebugLog, setInteractionLock, updateFromSnapshot])
+
+  useEffect(() => {
+    const anchorCell = autoMarkAnchorRef.current
+    if (!anchorCell) {
+      return
+    }
+
+    const autoMarkCells = collectResolvedSegmentBoundaryCells({
+      board,
+      solution: puzzle.solution,
+      clues: puzzle.clues,
+      activeCell: anchorCell,
+    })
+    if (autoMarkCells.length === 0) {
+      return
+    }
+
+    const commitKey = `${anchorCell.row}:${anchorCell.col}|${autoMarkCells
+      .map((cell) => `${cell.row}:${cell.col}`)
+      .join(',')}`
+    if (autoMarkCommitKeyRef.current === commitKey) {
+      return
+    }
+
+    autoMarkCommitKeyRef.current = commitKey
+    onBatchCommit(autoMarkCells, 'mark-empty')
+  }, [board, onBatchCommit, puzzle.clues, puzzle.solution])
 
   useEffect(() => {
     return () => {

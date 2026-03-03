@@ -125,6 +125,17 @@ describe('integration game loop', () => {
     expect(game?.livesRemaining).toBe(2)
   })
 
+  it('batch action can override input mode for explicit auto marks', () => {
+    const store = useGameStore.getState()
+    store.startGame(puzzle5x5)
+    store.setMode('fill')
+
+    store.batchAct([{ row: 0, col: 2 }], 'mark-empty')
+
+    const game = useGameStore.getState().game
+    expect(game?.board[0][2]).toBe('marked-empty')
+  })
+
   it('switchPuzzle resets to a new playable puzzle', () => {
     const store = useGameStore.getState()
     store.startGame(puzzle5x5)

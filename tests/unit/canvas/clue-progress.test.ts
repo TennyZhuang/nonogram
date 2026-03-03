@@ -1,4 +1,8 @@
-import { resolveClueProgress, resolveLineClues } from '@/canvas/clue-progress'
+import {
+  resolveClueProgress,
+  resolveLineClueSegments,
+  resolveLineClues,
+} from '@/canvas/clue-progress'
 import type { Board, CellState, PuzzleClues } from '@/core/types'
 
 describe('clue-progress', () => {
@@ -57,5 +61,22 @@ describe('clue-progress', () => {
       ],
       cols: [[false], [true], [true]],
     })
+  })
+
+  it('returns resolved segment metadata aligned with each clue run', () => {
+    const line: CellState[] = [
+      'marked-empty',
+      'filled',
+      'filled',
+      'unknown',
+      'filled',
+      'marked-empty',
+    ]
+    const solutionLine = [false, true, true, false, true, false]
+
+    expect(resolveLineClueSegments(line, solutionLine, [2, 1])).toEqual([
+      { start: 1, length: 2, resolved: true },
+      { start: 4, length: 1, resolved: true },
+    ])
   })
 })
