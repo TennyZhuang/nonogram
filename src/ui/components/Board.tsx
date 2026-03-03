@@ -104,6 +104,7 @@ function collectFilledDiffAnchors(previousBoard: BoardState, nextBoard: BoardSta
 export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
   const theme = useSettingsStore((state) => state.theme)
   const { play } = useSound()
+  const playRef = useRef(play)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const controllerRef = useRef<ReturnType<typeof createInputController> | null>(null)
@@ -127,6 +128,11 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
     () => typeof navigator !== 'undefined' && typeof navigator.share === 'function',
     [],
   )
+
+  useEffect(() => {
+    playRef.current = play
+  }, [play])
+
   const collectAutoMarkAnchors = useCallback((snapshot: InputControllerSnapshot): CellCoord[] => {
     const unique = new Map<string, CellCoord>()
     for (const cell of snapshot.previewCells) {
@@ -233,14 +239,14 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
       movementThreshold: 8,
       mapPointToCell: (point) => pixelToCell(point.x, point.y, layout),
       onCommit: (cells) => {
-        play('click')
+        playRef.current('click')
         onBatchCommit(cells, mode)
         setPreviewCells([])
         setActiveCell(null)
         setImpactCount(0)
       },
     })
-  }, [layout, mode, onBatchCommit, play])
+  }, [layout, mode, onBatchCommit])
 
   useEffect(() => {
     autoMarkAnchorsRef.current = []

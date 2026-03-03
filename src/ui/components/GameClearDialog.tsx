@@ -42,11 +42,15 @@ export function GameClearDialog({
   const [shareError, setShareError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (open) {
+      play('success')
+    }
+  }, [open, play])
+
+  useEffect(() => {
     if (!open) {
       return
     }
-
-    play('success')
 
     try {
       const previewCanvas = renderResultBoardPreview(puzzle, board)
@@ -77,7 +81,7 @@ export function GameClearDialog({
     return () => {
       cancelled = true
     }
-  }, [open, play, puzzle, board])
+  }, [open])
 
   if (!open) {
     return null
