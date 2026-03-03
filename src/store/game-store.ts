@@ -5,6 +5,7 @@ import {
   applyBatchAction,
   createGameState,
 } from '@/core/game-engine'
+import { calculateBoardLayout } from '@/canvas/layout'
 import { createTimer } from '@/core/timer'
 import type {
   Action,
@@ -346,4 +347,11 @@ export function resetGameStoreForTests(): void {
   foregroundGenerationRequest = 0
   timer = createTimer()
   useGameStore.setState(createInitialState())
+}
+
+// Expose for E2E testing (only when driven by automation tools like Playwright)
+if (typeof window !== 'undefined' && navigator.webdriver) {
+  const win = window as unknown as Record<string, unknown>
+  win.__gameStore = useGameStore
+  win.__calculateBoardLayout = calculateBoardLayout
 }
