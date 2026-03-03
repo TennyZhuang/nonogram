@@ -350,5 +350,9 @@ export function resetGameStoreForTests(): void {
 
 // Expose for E2E testing (only when driven by automation tools like Playwright)
 if (typeof window !== 'undefined' && navigator.webdriver) {
-  ;(window as unknown as Record<string, unknown>).__gameStore = useGameStore
+  const win = window as unknown as Record<string, unknown>
+  win.__gameStore = useGameStore
+  void import('@/canvas/layout').then((m) => {
+    win.__calculateBoardLayout = m.calculateBoardLayout
+  })
 }
