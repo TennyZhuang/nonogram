@@ -1,3 +1,7 @@
+import { useEffect } from 'react'
+
+import { useSound } from '@/hooks/useSound'
+
 interface GameOverDialogProps {
   open: boolean
   onRestart: () => void
@@ -11,6 +15,14 @@ export function GameOverDialog({
   onSwitchPuzzle,
   onBack,
 }: GameOverDialogProps) {
+  const { play } = useSound()
+
+  useEffect(() => {
+    if (open) {
+      play('error')
+    }
+  }, [open, play])
+
   if (!open) {
     return null
   }

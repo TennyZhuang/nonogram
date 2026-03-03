@@ -5,11 +5,14 @@ import { DEFAULT_THEME, normalizeThemeId, type ThemeId } from '@/theme/themes'
 
 interface SettingsStoreState {
   livesEnabled: boolean
+  soundEnabled: boolean
   theme: ThemeId
   tutorialCompleted: boolean
   hasHydrated: boolean
   setLivesEnabled: (enabled: boolean) => void
   toggleLivesEnabled: () => void
+  setSoundEnabled: (enabled: boolean) => void
+  toggleSoundEnabled: () => void
   setTheme: (theme: ThemeId) => void
   completeTutorial: () => void
   setHasHydrated: (hasHydrated: boolean) => void
@@ -19,6 +22,7 @@ export const useSettingsStore = create<SettingsStoreState>()(
   persist(
     (set) => ({
       livesEnabled: true,
+      soundEnabled: false,
       theme: DEFAULT_THEME,
       tutorialCompleted: false,
       hasHydrated: false,
@@ -27,21 +31,28 @@ export const useSettingsStore = create<SettingsStoreState>()(
         set((state) => ({
           livesEnabled: !state.livesEnabled,
         })),
+      setSoundEnabled: (enabled) => set({ soundEnabled: enabled }),
+      toggleSoundEnabled: () =>
+        set((state) => ({
+          soundEnabled: !state.soundEnabled,
+        })),
       setTheme: (theme) => set({ theme: normalizeThemeId(theme) }),
       completeTutorial: () => set({ tutorialCompleted: true }),
       setHasHydrated: (hasHydrated) => set({ hasHydrated }),
     }),
     {
       name: 'nonogram-settings',
-      version: 3,
+      version: 4,
       migrate: (persistedState) => {
         const state = (persistedState ?? {}) as {
           livesEnabled?: boolean
+          soundEnabled?: boolean
           theme?: string
           tutorialCompleted?: boolean
         }
         return {
           livesEnabled: state.livesEnabled ?? true,
+          soundEnabled: state.soundEnabled ?? false,
           theme: normalizeThemeId(state.theme),
           tutorialCompleted: state.tutorialCompleted ?? false,
           hasHydrated: false,
@@ -52,6 +63,7 @@ export const useSettingsStore = create<SettingsStoreState>()(
       },
       partialize: (state) => ({
         livesEnabled: state.livesEnabled,
+        soundEnabled: state.soundEnabled,
         theme: state.theme,
         tutorialCompleted: state.tutorialCompleted,
       }),
