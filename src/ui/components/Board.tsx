@@ -160,14 +160,26 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
   )
 
   const layout = useMemo<BoardLayout>(() => {
+    const padding = canvasSize.width < 390 ? 6 : 8
     return calculateBoardLayout({
       canvasWidth: canvasSize.width,
       canvasHeight: canvasSize.height,
       gridSize: puzzle.size,
       maxRowClueLength: getMaxRowClueLength(puzzle),
       maxColClueLength: getMaxColClueLength(puzzle),
+      padding,
     })
   }, [canvasSize.height, canvasSize.width, puzzle])
+
+  const compactClueHint = useMemo(() => {
+    if (!(layout.rowClueCompact || layout.colClueCompact) || !activeCell) {
+      return null
+    }
+
+    const rowClue = puzzle.clues.rows[activeCell.row]?.join(' ') ?? ''
+    const colClue = puzzle.clues.cols[activeCell.col]?.join(' ') ?? ''
+    return `行 ${activeCell.row + 1}: ${rowClue || '0'} ｜ 列 ${activeCell.col + 1}: ${colClue || '0'}`
+  }, [activeCell, layout.colClueCompact, layout.rowClueCompact, puzzle.clues.cols, puzzle.clues.rows])
 
   const boardColors = useMemo<BoardColors>(() => {
     if (typeof document === 'undefined') {
@@ -707,8 +719,18 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
       className="game-board-interaction relative h-[72vh] w-full rounded-xl border border-border"
     >
       {impactCount > 1 ? (
-        <div className="pointer-events-none absolute left-1/2 top-2 z-10 -translate-x-1/2 rounded-full bg-black/70 px-3 py-1 text-xs text-white">
+        <div
+          className={`pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/70 px-3 py-1 text-xs text-white ${
+            compactClueHint ? 'top-10' : 'top-2'
+          }`}
+        >
           影响 {impactCount} 格
+        </div>
+      ) : null}
+
+      {compactClueHint ? (
+        <div className="pointer-events-none absolute inset-x-2 top-2 z-10 rounded-md bg-black/60 px-2 py-1 text-[10px] text-white">
+          {compactClueHint}
         </div>
       ) : null}
 

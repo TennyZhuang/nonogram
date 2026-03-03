@@ -91,7 +91,7 @@ export function GamePage({ onBackHome }: GamePageProps) {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-3 px-3 py-3 lg:max-w-6xl">
+    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-3 px-2 py-3 sm:px-3 lg:max-w-6xl">
       <header className="flex items-center justify-between">
         <GameActionMenu
           onRestart={restart}
