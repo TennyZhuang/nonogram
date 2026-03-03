@@ -54,12 +54,19 @@ export const useAchievementStore = create<AchievementStoreState>((set, get) => (
       return
     }
 
-    const achievements = get().achievements.map((item) =>
-      unlockedIds.includes(item.id) ? { ...item, unlocked: true } : item,
+    const prevAchievements = get().achievements
+    const lockedIds = prevAchievements
+      .filter((item) => unlockedIds.includes(item.id) && !item.unlocked)
+      .map((item) => item.id)
+
+    if (lockedIds.length === 0) {
+      return
+    }
+
+    const achievements = prevAchievements.map((item) =>
+      lockedIds.includes(item.id) ? { ...item, unlocked: true } : item,
     )
-    const firstNewlyUnlocked = achievements.find(
-      (item) => unlockedIds.includes(item.id) && item.unlocked,
-    )
+    const firstNewlyUnlocked = achievements.find((item) => lockedIds.includes(item.id))
 
     set({
       achievements,
