@@ -4,10 +4,14 @@ import { useSettingsStore } from '@/store/settings-store'
 
 type SoundType = 'click' | 'success' | 'error'
 
+const baseUrl = import.meta.env.BASE_URL.endsWith('/')
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`
+
 const soundFiles: Record<SoundType, string> = {
-  click: '/sounds/click.mp3',
-  success: '/sounds/success.mp3',
-  error: '/sounds/error.mp3',
+  click: `${baseUrl}sounds/click.mp3`,
+  success: `${baseUrl}sounds/success.mp3`,
+  error: `${baseUrl}sounds/error.mp3`,
 }
 
 export function useSound() {
