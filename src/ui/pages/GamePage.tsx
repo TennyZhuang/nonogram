@@ -4,6 +4,7 @@ import { useGameStore } from '@/store/game-store'
 import { useAchievementStore } from '@/store/achievement-store'
 import { AchievementToast } from '@/ui/components/AchievementToast'
 import { Board } from '@/ui/components/Board'
+import { GameActionMenu } from '@/ui/components/GameActionMenu'
 import { GameClearDialog } from '@/ui/components/GameClearDialog'
 import { GameOverDialog } from '@/ui/components/GameOverDialog'
 import { LivesDisplay } from '@/ui/components/LivesDisplay'
@@ -92,13 +93,11 @@ export function GamePage({ onBackHome }: GamePageProps) {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-3 px-3 py-3 lg:max-w-6xl">
       <header className="flex items-center justify-between">
-        <button
-          type="button"
-          className="rounded-md border border-border px-3 py-1 text-xs"
-          onClick={onBackHome}
-        >
-          返回
-        </button>
+        <GameActionMenu
+          onRestart={restart}
+          onSwitchPuzzle={() => switchPuzzle()}
+          onBack={onBackHome}
+        />
         <TimerDisplay elapsedMs={elapsedMs} />
         <LivesDisplay lives={game.livesRemaining} />
       </header>
