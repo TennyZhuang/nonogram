@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 
 import { formatElapsed } from '@/core/timer'
 import type { Board, PuzzleDefinition } from '@/core/types'
+import { useSound } from '@/hooks/useSound'
 import {
   createShareQrDataUrl,
   downloadBlob,
@@ -34,6 +35,7 @@ export function GameClearDialog({
   onBack,
   onNext,
 }: GameClearDialogProps) {
+  const { play } = useSound()
   const [boardPreviewUrl, setBoardPreviewUrl] = useState('')
   const [qrDataUrl, setQrDataUrl] = useState('')
   const [isGeneratingShare, setIsGeneratingShare] = useState(false)
@@ -43,6 +45,8 @@ export function GameClearDialog({
     if (!open) {
       return
     }
+
+    play('success')
 
     try {
       const previewCanvas = renderResultBoardPreview(puzzle, board)
@@ -73,7 +77,7 @@ export function GameClearDialog({
     return () => {
       cancelled = true
     }
-  }, [open])
+  }, [open, play, puzzle, board])
 
   if (!open) {
     return null

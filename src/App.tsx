@@ -10,6 +10,7 @@ import { GamePage } from '@/ui/pages/GamePage'
 import { HomePage } from '@/ui/pages/HomePage'
 import { OnboardingPage } from '@/ui/pages/OnboardingPage'
 import { SettingsPage } from '@/ui/pages/SettingsPage'
+import { SoundToggle } from '@/ui/components/SoundToggle'
 
 type AppPage = 'home' | 'game' | 'achievements' | 'settings' | 'onboarding'
 
@@ -156,6 +157,7 @@ function App() {
   return (
     <>
       {pageContent}
+      <SoundToggle />
       <div className="pointer-events-none fixed right-2 top-2 z-50 rounded bg-black/70 px-2 py-1 text-[10px] text-white">
         构建时间：{buildLabel}
       </div>
