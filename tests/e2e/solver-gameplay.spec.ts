@@ -18,11 +18,12 @@ test('用求解器完整打通一盘 D1 游戏', async ({ page }) => {
   const canvas = page.getByTestId('game-board-canvas')
   await expect(canvas).toBeVisible()
 
-  // Wait for the game store to have a puzzle ready (deterministic wait)
+  // Wait for the game store, puzzle, and layout helper to be ready (deterministic wait)
   await page.waitForFunction(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const store = (window as any).__gameStore
-    if (!store) return false
+    const win = window as any
+    const store = win.__gameStore
+    if (!store || !win.__calculateBoardLayout) return false
     const state = store.getState()
     return state.currentPuzzle !== null && state.game !== null
   }, undefined, { timeout: 10000 })
