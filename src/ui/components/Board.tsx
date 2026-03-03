@@ -120,6 +120,7 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
   const [debugActionTip, setDebugActionTip] = useState('')
 
   const [debugEnabled] = useState(readDebugInputEnabled)
+  const autoMarkEnabled = puzzle.tier >= 4
   const canShareDebug = useMemo(
     () => typeof navigator !== 'undefined' && typeof navigator.share === 'function',
     [],
@@ -355,6 +356,11 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
   }, [appendDebugLog, collectAutoMarkAnchors, setInteractionLock, updateFromSnapshot])
 
   useEffect(() => {
+    if (!autoMarkEnabled) {
+      autoMarkAnchorsRef.current = []
+      return
+    }
+
     const anchorCells = autoMarkAnchorsRef.current
     if (anchorCells.length === 0) {
       return
@@ -384,7 +390,7 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
     }
 
     onBatchCommit(autoMarkCells, 'mark-empty')
-  }, [board, onBatchCommit, puzzle.clues, puzzle.solution])
+  }, [autoMarkEnabled, board, onBatchCommit, puzzle.clues, puzzle.solution])
 
   useEffect(() => {
     previousBoardRef.current = board
