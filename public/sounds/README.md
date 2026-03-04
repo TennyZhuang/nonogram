@@ -1,33 +1,24 @@
 # Sound Effects
 
-This directory should contain the following sound effect files:
+Audio files in this directory:
 
-- `click.wav` / `click.mp3` - Sound played when clicking a cell
-- `success.wav` / `success.mp3` - Sound played when completing a puzzle
-- `error.wav` / `error.mp3` - Sound played when making a mistake
+- `click.mp3` - Cell click / tap feedback
+- `success.mp3` - Puzzle completion jingle
+- `error.mp3` - Wrong guess notification
 
-`useSound` prefers `.wav` and falls back to `.mp3` when needed.
+## How These Were Generated
 
-## Regenerate Original Assets
+Generated via the [ElevenLabs Text-to-Sound-Effects API](https://elevenlabs.io/docs/api-reference/sound-generation)
+using the `eleven_text_to_sound_v2` model. Prompts used:
 
-Run:
+- **click**: "Crisp satisfying pop click, like a bubble pop or wooden block tap, bright and punchy UI feedback sound, loud and clear" (0.5s)
+- **success**: "Cheerful ascending chime, bright puzzle complete jingle, happy short victory fanfare, casual game" (1.5s)
+- **error**: "Soft error buzz, gentle wrong answer sound, short low-pitched notification, casual puzzle game" (0.8s)
 
-```bash
-python3.12 scripts/generate_sfx.py
-```
+## Replacing
 
-The generator creates original one-shot UI sounds that are safe to use in this project.
-
-## Replace With External Assets
-
-You can still replace with your own files and keep the same names. Free sources:
+Drop in your own files with the same names. Free sources:
 
 - https://freesound.org/
 - https://mixkit.co/free-sound-effects/
 - https://www.zapsplat.com/
-
-## Format
-
-- Format: WAV preferred, MP3 fallback
-- Duration: Short (< 1 second recommended)
-- Volume: Normalized
