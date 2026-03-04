@@ -43,7 +43,7 @@ describe('useSound', () => {
       result.current.play('click')
     })
 
-    expect(audioCtor).toHaveBeenCalledWith(`${import.meta.env.BASE_URL}sounds/click.mp3`)
+    expect(audioCtor).toHaveBeenCalledWith(`${import.meta.env.BASE_URL}sounds/click.wav`)
     expect(play).toHaveBeenCalledTimes(1)
     expect(audioCtor.mock.instances[0]?.currentTime).toBe(0)
   })
