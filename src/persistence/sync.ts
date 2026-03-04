@@ -2,6 +2,7 @@ import { createGameState } from '@/core/game-engine'
 import type { DifficultyTier } from '@/core/types'
 import { useAchievementStore } from '@/store/achievement-store'
 import { useGameStore } from '@/store/game-store'
+import { useNotificationStore } from '@/store/notification-store'
 import {
   clearActiveSession,
   loadAchievements,
@@ -74,7 +75,7 @@ export function startAutoSave(delayMs = 1_000): StopHandle {
     }
     timeout = window.setTimeout(() => {
       void persistNow().catch(() => {
-        // TODO(v0.2): Add user-facing error hints for storage failures.
+        useNotificationStore.getState().showNotification('无法保存游戏进度，请检查浏览器存储设置')
       })
     }, delayMs)
   }
@@ -92,7 +93,7 @@ export function startAutoSave(delayMs = 1_000): StopHandle {
 export function saveOnLifecycle(): StopHandle {
   const flush = () => {
     void persistNow().catch(() => {
-      // TODO(v0.2): Add retry strategy for lifecycle-triggered save failures.
+      useNotificationStore.getState().showNotification('无法保存游戏进度，请检查浏览器存储设置')
     })
   }
 
@@ -169,6 +170,6 @@ export async function hydrateFromStorage(): Promise<void> {
       lastUnlocked: null,
     }))
   } catch {
-    // TODO(v0.2): Emit diagnostics hook for persistence hydration failures.
+    useNotificationStore.getState().showNotification('无法加载游戏数据，将使用默认设置')
   }
 }

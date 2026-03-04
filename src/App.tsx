@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { DifficultyTier } from '@/core/types'
 import { hydrateFromStorage, saveOnLifecycle, startAutoSave } from '@/persistence/sync'
 import { useGameStore } from '@/store/game-store'
+import { useNotificationStore } from '@/store/notification-store'
 import { useSettingsStore } from '@/store/settings-store'
 import { normalizeThemeId } from '@/theme/themes'
 import { AchievementsPage } from '@/ui/pages/AchievementsPage'
@@ -10,6 +11,7 @@ import { GamePage } from '@/ui/pages/GamePage'
 import { HomePage } from '@/ui/pages/HomePage'
 import { OnboardingPage } from '@/ui/pages/OnboardingPage'
 import { SettingsPage } from '@/ui/pages/SettingsPage'
+import { ErrorToast } from '@/ui/components/ErrorToast'
 import { SoundToggle } from '@/ui/components/SoundToggle'
 
 type AppPage = 'home' | 'game' | 'achievements' | 'settings' | 'onboarding'
@@ -32,6 +34,8 @@ function App() {
   const tutorialCompleted = useSettingsStore((state) => state.tutorialCompleted)
   const completeTutorial = useSettingsStore((state) => state.completeTutorial)
   const hasHydrated = useSettingsStore((state) => state.hasHydrated)
+  const errorMessage = useNotificationStore((state) => state.message)
+  const clearNotification = useNotificationStore((state) => state.clearNotification)
   const [onboardingReturnPage, setOnboardingReturnPage] = useState<AppPage>('home')
 
   const normalizedTheme = normalizeThemeId(theme)
@@ -157,6 +161,11 @@ function App() {
   return (
     <>
       {pageContent}
+      <ErrorToast
+        open={Boolean(errorMessage)}
+        message={errorMessage ?? ''}
+        onClose={clearNotification}
+      />
       <SoundToggle />
       <div className="pointer-events-none fixed bottom-2 left-2 z-50 rounded bg-black/70 px-2 py-1 text-[10px] text-white">
         构建时间：{buildLabel}
