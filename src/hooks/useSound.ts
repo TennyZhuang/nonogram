@@ -27,6 +27,11 @@ let buffersLoaded = false
 function getAudioContext(): AudioContext {
   if (!audioContext) {
     audioContext = new AudioContext()
+    // Prevent iOS from showing Now Playing controls for short UI sounds
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.metadata = null
+      navigator.mediaSession.playbackState = 'none'
+    }
   }
   return audioContext
 }
@@ -88,6 +93,13 @@ export function useSound() {
         source.connect(gain)
         gain.connect(ctx.destination)
         source.start(0)
+
+        // Suspend AudioContext after sound ends to dismiss iOS Now Playing controls
+        source.onended = () => {
+          if ('mediaSession' in navigator) {
+            navigator.mediaSession.playbackState = 'none'
+          }
+        }
       } catch {
         // Ignore audio errors
       }
