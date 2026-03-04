@@ -275,11 +275,12 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
       solution: puzzle.solution,
       clues: puzzle.clues,
       layout,
+      mode,
       colors: boardColors,
       previewCells,
       activeCell,
     })
-  }, [activeCell, board, boardColors, canvasSize.height, canvasSize.width, layout, previewCells, puzzle])
+  }, [activeCell, board, boardColors, canvasSize.height, canvasSize.width, layout, mode, previewCells, puzzle])
 
   const updateFromSnapshot = useCallback(
     (snapshot: ReturnType<ReturnType<typeof createInputController>['getSnapshot']>) => {

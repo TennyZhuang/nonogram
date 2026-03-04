@@ -5,7 +5,7 @@ import {
   resolveLineClueSegments,
   type ClueProgress,
 } from '@/canvas/clue-progress'
-import type { Board, CellState, PuzzleClues } from '@/core/types'
+import type { Board, CellState, InputMode, PuzzleClues } from '@/core/types'
 
 export interface BoardColors {
   background: string
@@ -17,6 +17,7 @@ export interface BoardColors {
   clueResolvedActive: string
   fill: string
   emptyMark: string
+  emptyMarkHint: string
   revealedFill: string
   revealedEmpty: string
   preview: string
@@ -28,6 +29,7 @@ interface RenderOptions {
   solution: boolean[][]
   clues: PuzzleClues
   layout: BoardLayout
+  mode?: InputMode
   previewCells?: CellCoord[]
   activeCell?: CellCoord | null
   colors?: BoardColors
@@ -50,6 +52,7 @@ const DEFAULT_COLORS: BoardColors = {
   clueResolvedActive: '#15803d',
   fill: '#111827',
   emptyMark: '#6b7280',
+  emptyMarkHint: 'rgba(107, 114, 128, 0.18)',
   revealedFill: '#ef4444',
   revealedEmpty: '#fde68a',
   preview: 'rgba(59, 130, 246, 0.25)',
@@ -87,6 +90,11 @@ export function getBoardColorsFromCss(root: Element | null = null): BoardColors 
     ),
     fill: readCssColor(styles, '--canvas-fill', DEFAULT_COLORS.fill),
     emptyMark: readCssColor(styles, '--canvas-empty-mark', DEFAULT_COLORS.emptyMark),
+    emptyMarkHint: readCssColor(
+      styles,
+      '--canvas-empty-mark-hint',
+      DEFAULT_COLORS.emptyMarkHint,
+    ),
     revealedFill: readCssColor(styles, '--canvas-revealed-fill', DEFAULT_COLORS.revealedFill),
     revealedEmpty: readCssColor(styles, '--canvas-revealed-empty', DEFAULT_COLORS.revealedEmpty),
     preview: readCssColor(styles, '--canvas-preview', DEFAULT_COLORS.preview),
@@ -110,6 +118,27 @@ function drawMarkedEmpty(
   ctx.moveTo(x + size - pad, y + pad)
   ctx.lineTo(x + pad, y + size - pad)
   ctx.stroke()
+}
+
+function drawMarkEmptyHint(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  color: string,
+) {
+  const pad = Math.max(2, Math.floor(size * 0.25))
+  ctx.save()
+  ctx.strokeStyle = color
+  ctx.lineWidth = Math.max(1, Math.floor(size * 0.06))
+  ctx.setLineDash([Math.max(2, Math.floor(size * 0.08)), Math.max(2, Math.floor(size * 0.08))])
+  ctx.beginPath()
+  ctx.moveTo(x + pad, y + pad)
+  ctx.lineTo(x + size - pad, y + size - pad)
+  ctx.moveTo(x + size - pad, y + pad)
+  ctx.lineTo(x + pad, y + size - pad)
+  ctx.stroke()
+  ctx.restore()
 }
 
 function drawCell(
@@ -364,6 +393,7 @@ export function collectResolvedSegmentBoundaryCells(
 
 export function renderBoard(ctx: CanvasRenderingContext2D, options: RenderOptions): void {
   const { board, solution, clues, layout } = options
+  const mode = options.mode ?? 'fill'
   const previewCells = options.previewCells ?? []
   const activeCell = options.activeCell ?? null
   const colors = options.colors ?? getBoardColorsFromCss()
@@ -383,6 +413,18 @@ export function renderBoard(ctx: CanvasRenderingContext2D, options: RenderOption
       const x = layout.gridOriginX + col * layout.cellSize
       const y = layout.gridOriginY + row * layout.cellSize
       drawCell(ctx, board[row][col], x, y, layout.cellSize, colors)
+    }
+  }
+
+  if (mode === 'mark-empty') {
+    for (let row = 0; row < size; row += 1) {
+      for (let col = 0; col < size; col += 1) {
+        if (board[row][col] === 'unknown') {
+          const x = layout.gridOriginX + col * layout.cellSize
+          const y = layout.gridOriginY + row * layout.cellSize
+          drawMarkEmptyHint(ctx, x, y, layout.cellSize, colors.emptyMarkHint)
+        }
+      }
     }
   }
 

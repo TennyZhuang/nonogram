@@ -49,6 +49,7 @@
   --canvas-clue-resolved-active: #1d4ed8;
   --canvas-fill: #2b1a0f;
   --canvas-empty-mark: #8a7a66;
+  --canvas-empty-mark-hint: rgb(138 122 102 / 18%);
   --canvas-revealed-fill: #c2413b;
   --canvas-revealed-empty: #f5d9a4;
   --canvas-preview: rgb(122 45 34 / 24%);
@@ -83,6 +84,7 @@
   --canvas-clue-resolved-active: #1d4ed8;
   --canvas-fill: #2b1a0f;
   --canvas-empty-mark: #8a7a66;
+  --canvas-empty-mark-hint: rgb(138 122 102 / 18%);
   --canvas-revealed-fill: #c2413b;
   --canvas-revealed-empty: #f5d9a4;
   --canvas-preview: rgb(122 45 34 / 24%);
@@ -117,6 +119,7 @@
   --canvas-clue-resolved-active: #6d28d9;
   --canvas-fill: #1a3a2a;
   --canvas-empty-mark: #5c7762;
+  --canvas-empty-mark-hint: rgb(92 119 98 / 18%);
   --canvas-revealed-fill: #d14e4e;
   --canvas-revealed-empty: #daeec8;
   --canvas-preview: rgb(47 111 79 / 24%);
@@ -151,6 +154,7 @@
   --canvas-clue-resolved-active: #0b5d57;
   --canvas-fill: #5c2f22;
   --canvas-empty-mark: #9e6f5c;
+  --canvas-empty-mark-hint: rgb(158 111 92 / 18%);
   --canvas-revealed-fill: #df4d3a;
   --canvas-revealed-empty: #f9d6ac;
   --canvas-preview: rgb(182 73 45 / 24%);
@@ -185,6 +189,7 @@
   --canvas-clue-resolved-active: #ffd97a;
   --canvas-fill: #f3e6ff;
   --canvas-empty-mark: #c6b8db;
+  --canvas-empty-mark-hint: rgb(198 184 219 / 22%);
   --canvas-revealed-fill: #ff7b7b;
   --canvas-revealed-empty: #6f5738;
   --canvas-preview: rgb(193 136 229 / 28%);
