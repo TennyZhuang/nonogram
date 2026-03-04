@@ -9,9 +9,9 @@ const baseUrl = import.meta.env.BASE_URL.endsWith('/')
   : `${import.meta.env.BASE_URL}/`
 
 const soundFiles: Record<SoundType, string[]> = {
-  click: [`${baseUrl}sounds/click.wav`, `${baseUrl}sounds/click.mp3`],
-  success: [`${baseUrl}sounds/success.wav`, `${baseUrl}sounds/success.mp3`],
-  error: [`${baseUrl}sounds/error.wav`, `${baseUrl}sounds/error.mp3`],
+  click: [`${baseUrl}sounds/click.mp3`],
+  success: [`${baseUrl}sounds/success.mp3`],
+  error: [`${baseUrl}sounds/error.mp3`],
 }
 
 const soundVolumes: Record<SoundType, number> = {
