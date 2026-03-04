@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { createInputController, type InputControllerSnapshot } from '@/canvas/input-controller'
-import { pixelToCell, type CellCoord } from '@/canvas/hit-map'
+import { cellToPixel, pixelToCell, type CellCoord } from '@/canvas/hit-map'
 import { calculateBoardLayout, type BoardLayout } from '@/canvas/layout'
 import {
   collectResolvedSegmentBoundaryCells,
@@ -30,6 +30,59 @@ interface CanvasSize {
   width: number
   height: number
 }
+
+interface CancelActionZone {
+  centerX: number
+  centerY: number
+  radius: number
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value))
+}
+
+function buildCancelActionZone(
+  startCell: CellCoord,
+  layout: BoardLayout,
+  canvasSize: CanvasSize,
+): CancelActionZone {
+  const startRect = cellToPixel(startCell.row, startCell.col, layout)
+  const radius = Math.round(clamp(layout.cellSize * 0.42, 15, 22))
+  const gap = Math.max(6, Math.round(layout.cellSize * 0.22))
+  const minX = radius + 4
+  const maxX = canvasSize.width - radius - 4
+  const minY = radius + 4
+  const maxY = canvasSize.height - radius - 4
+
+  const leftX = startRect.x - radius - gap
+  const rightX = startRect.x + startRect.width + radius + gap
+  const hasLeftRoom = leftX >= minX
+  const preferredX = hasLeftRoom ? leftX : rightX
+
+  const aboveY = startRect.y - radius - gap
+  const belowY = startRect.y + startRect.height + radius + gap
+  const preferredY = aboveY >= minY ? aboveY : belowY
+
+  return {
+    centerX: clamp(preferredX, minX, maxX),
+    centerY: clamp(preferredY, minY, maxY),
+    radius,
+  }
+}
+
+function isPointInsideCancelActionZone(
+  point: { x: number; y: number },
+  zone: CancelActionZone,
+  hitScale = 1,
+): boolean {
+  const dx = point.x - zone.centerX
+  const dy = point.y - zone.centerY
+  const hitRadius = zone.radius * hitScale
+  return dx * dx + dy * dy <= hitRadius * hitRadius
+}
+
+const CANCEL_ZONE_HOVER_HIT_SCALE = 1.35
+const CANCEL_ZONE_RELEASE_HIT_SCALE = 1.35
 
 function getMaxRowClueLength(puzzle: PuzzleDefinition): number {
   return Math.max(...puzzle.clues.rows.map((clue) => clue.join(' ').length), 1)
@@ -92,6 +145,8 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
   const activePointerIdRef = useRef<number | null>(null)
   const activeTouchIdRef = useRef<number | null>(null)
   const interactionLockedRef = useRef(false)
+  const cancelActionZoneRef = useRef<CancelActionZone | null>(null)
+  const cancelZoneHighlightedRef = useRef(false)
   const autoMarkAnchorsRef = useRef<CellCoord[]>([])
   const previousBoardRef = useRef<BoardState>(board)
   const debugIndexRef = useRef(0)
@@ -99,6 +154,9 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
   const [canvasSize, setCanvasSize] = useState<CanvasSize>({ width: 360, height: 620 })
   const [previewCells, setPreviewCells] = useState<CellCoord[]>([])
   const [activeCell, setActiveCell] = useState<CellCoord | null>(null)
+  const [previewStartCell, setPreviewStartCell] = useState<CellCoord | null>(null)
+  const [previewPhase, setPreviewPhase] = useState<InputControllerSnapshot['phase']>('idle')
+  const [cancelZoneHighlighted, setCancelZoneHighlightedState] = useState(false)
   const [impactCount, setImpactCount] = useState(0)
   const [debugLogs, setDebugLogs] = useState<string[]>([])
   const [debugActionTip, setDebugActionTip] = useState('')
@@ -157,6 +215,17 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
     const themedRoot = document.querySelector(`:root[data-theme='${theme}']`)
     return getBoardColorsFromCss(themedRoot ?? document.documentElement)
   }, [theme])
+
+  const cancelActionZone = useMemo<CancelActionZone | null>(() => {
+    if (previewPhase !== 'previewing' || !previewStartCell) {
+      return null
+    }
+    return buildCancelActionZone(previewStartCell, layout, canvasSize)
+  }, [canvasSize, layout, previewPhase, previewStartCell])
+
+  useEffect(() => {
+    cancelActionZoneRef.current = cancelActionZone
+  }, [cancelActionZone])
 
   useEffect(() => {
     const container = containerRef.current
@@ -224,6 +293,8 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
         onBatchCommit(cells, mode)
         setPreviewCells([])
         setActiveCell(null)
+        setPreviewStartCell(null)
+        setPreviewPhase('idle')
         setImpactCount(0)
       },
     })
@@ -264,9 +335,11 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
   }, [activeCell, board, boardColors, canvasSize.height, canvasSize.width, layout, mode, previewCells, puzzle])
 
   const updateFromSnapshot = useCallback(
-    (snapshot: ReturnType<ReturnType<typeof createInputController>['getSnapshot']>) => {
+    (snapshot: InputControllerSnapshot) => {
       setPreviewCells(snapshot.previewCells)
       setActiveCell(snapshot.activeCell)
+      setPreviewStartCell(snapshot.startCell)
+      setPreviewPhase(snapshot.phase)
       setImpactCount(snapshot.previewCells.length)
     },
     [],
@@ -281,12 +354,33 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
     appendDebugLog('interaction-lock', { locked })
   }, [appendDebugLog])
 
+  const setCancelZoneHighlighted = useCallback((highlighted: boolean) => {
+    if (cancelZoneHighlightedRef.current === highlighted) {
+      return
+    }
+    cancelZoneHighlightedRef.current = highlighted
+    setCancelZoneHighlightedState(highlighted)
+  }, [])
+
+  const updateCancelZoneHighlight = useCallback(
+    (point: { x: number; y: number }) => {
+      const zone = cancelActionZoneRef.current
+      const highlighted = zone
+        ? isPointInsideCancelActionZone(point, zone, CANCEL_ZONE_HOVER_HIT_SCALE)
+        : false
+      setCancelZoneHighlighted(highlighted)
+      return highlighted
+    },
+    [setCancelZoneHighlighted],
+  )
+
   const startPreview = useCallback(
     (point: { x: number; y: number }) => {
       const controller = controllerRef.current
       if (!controller) {
         return false
       }
+      setCancelZoneHighlighted(false)
       const snapshot = controller.pointerDown(point)
       updateFromSnapshot(snapshot)
       const started = snapshot.phase === 'previewing'
@@ -298,7 +392,7 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
       })
       return started
     },
-    [appendDebugLog, setInteractionLock, updateFromSnapshot],
+    [appendDebugLog, setCancelZoneHighlighted, setInteractionLock, updateFromSnapshot],
   )
 
   const updatePreview = useCallback(
@@ -307,13 +401,14 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
       if (!controller) {
         return
       }
+      updateCancelZoneHighlight(point)
       updateFromSnapshot(controller.pointerMove(point))
       appendDebugLog('preview-move', {
         x: Math.round(point.x),
         y: Math.round(point.y),
       })
     },
-    [appendDebugLog, updateFromSnapshot],
+    [appendDebugLog, updateCancelZoneHighlight, updateFromSnapshot],
   )
 
   const commitPreview = useCallback(
@@ -325,13 +420,20 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
       const snapshot = controller.getSnapshot()
       autoMarkAnchorsRef.current = collectAutoMarkAnchors(snapshot)
       updateFromSnapshot(controller.pointerUp(point))
+      setCancelZoneHighlighted(false)
       setInteractionLock(false)
       appendDebugLog('preview-commit', {
         x: Math.round(point.x),
         y: Math.round(point.y),
       })
     },
-    [appendDebugLog, collectAutoMarkAnchors, setInteractionLock, updateFromSnapshot],
+    [
+      appendDebugLog,
+      collectAutoMarkAnchors,
+      setCancelZoneHighlighted,
+      setInteractionLock,
+      updateFromSnapshot,
+    ],
   )
 
   const cancelPreview = useCallback(() => {
@@ -342,9 +444,38 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
     const snapshot = controller.getSnapshot()
     autoMarkAnchorsRef.current = collectAutoMarkAnchors(snapshot)
     updateFromSnapshot(controller.pointerCancel())
+    setCancelZoneHighlighted(false)
     setInteractionLock(false)
     appendDebugLog('preview-cancel')
-  }, [appendDebugLog, collectAutoMarkAnchors, setInteractionLock, updateFromSnapshot])
+  }, [
+    appendDebugLog,
+    collectAutoMarkAnchors,
+    setCancelZoneHighlighted,
+    setInteractionLock,
+    updateFromSnapshot,
+  ])
+
+  const abortPreview = useCallback(
+    (reason: string) => {
+      const controller = controllerRef.current
+      if (!controller) {
+        return
+      }
+      autoMarkAnchorsRef.current = []
+      updateFromSnapshot(controller.pointerAbort())
+      setCancelZoneHighlighted(false)
+      setInteractionLock(false)
+      appendDebugLog('preview-abort', { reason })
+    },
+    [appendDebugLog, setCancelZoneHighlighted, setInteractionLock, updateFromSnapshot],
+  )
+
+  const shouldAbortOnReleaseAtPoint = useCallback((point: { x: number; y: number }): boolean => {
+    const zone = cancelActionZoneRef.current
+    return zone
+      ? isPointInsideCancelActionZone(point, zone, CANCEL_ZONE_RELEASE_HIT_SCALE)
+      : false
+  }, [])
 
   useEffect(() => {
     if (!autoMarkEnabled) {
@@ -465,11 +596,12 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
           return
         }
         event.preventDefault()
+        const point = pointFromClient(event.clientX, event.clientY, canvas)
         appendDebugLog('pointer-move', {
           id: event.pointerId,
           pointerType: event.pointerType,
         })
-        updatePreview(pointFromClient(event.clientX, event.clientY, canvas))
+        updatePreview(point)
       }
 
       const onPointerUp = (event: PointerEvent) => {
@@ -479,11 +611,18 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
         activePointerIdRef.current = null
         releaseCapture(event.pointerId)
         event.preventDefault()
+        const point = pointFromClient(event.clientX, event.clientY, canvas)
+        const shouldAbort = shouldAbortOnReleaseAtPoint(point)
         appendDebugLog('pointer-up', {
           id: event.pointerId,
           pointerType: event.pointerType,
+          cancelByZone: shouldAbort,
         })
-        commitPreview(pointFromClient(event.clientX, event.clientY, canvas))
+        if (shouldAbort) {
+          abortPreview('cancel-zone-release')
+          return
+        }
+        commitPreview(point)
       }
 
       const onPointerCancel = (event: PointerEvent) => {
@@ -550,10 +689,11 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
       }
 
       event.preventDefault()
+      const point = pointFromClient(touch.clientX, touch.clientY, canvas)
       appendDebugLog('touch-move', {
         id: touch.identifier,
       })
-      updatePreview(pointFromClient(touch.clientX, touch.clientY, canvas))
+      updatePreview(point)
     }
 
     const onTouchEnd = (event: TouchEvent) => {
@@ -569,10 +709,17 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
 
       activeTouchIdRef.current = null
       event.preventDefault()
+      const point = pointFromClient(touch.clientX, touch.clientY, canvas)
+      const shouldAbort = shouldAbortOnReleaseAtPoint(point)
       appendDebugLog('touch-end', {
         id: touch.identifier,
+        cancelByZone: shouldAbort,
       })
-      commitPreview(pointFromClient(touch.clientX, touch.clientY, canvas))
+      if (shouldAbort) {
+        abortPreview('cancel-zone-release')
+        return
+      }
+      commitPreview(point)
     }
 
     const onTouchCancel = (event: TouchEvent) => {
@@ -598,10 +745,12 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
       window.removeEventListener('touchcancel', onTouchCancel)
     }
   }, [
+    abortPreview,
     appendDebugLog,
     cancelPreview,
     commitPreview,
     startPreview,
+    shouldAbortOnReleaseAtPoint,
     updatePreview,
   ])
 
@@ -691,6 +840,31 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
       {impactCount > 1 ? (
         <div className="pointer-events-none absolute left-1/2 top-2 z-10 -translate-x-1/2 rounded-full bg-black/70 px-3 py-1 text-xs text-white">
           影响 {impactCount} 格
+        </div>
+      ) : null}
+
+      {cancelActionZone ? (
+        <div
+          data-testid="gesture-cancel-zone"
+          data-active={cancelZoneHighlighted ? 'true' : 'false'}
+          aria-hidden="true"
+          className={`pointer-events-none absolute z-20 flex items-center justify-center rounded-full text-white backdrop-blur-[1px] transition-[transform,background-color,border-color,box-shadow] duration-150 ${
+            cancelZoneHighlighted
+              ? 'border-red-200/90 bg-red-500/65 shadow-lg'
+              : 'border-white/70 bg-black/45 shadow-lg'
+          }`}
+          style={{
+            width: `${cancelActionZone.radius * 2}px`,
+            height: `${cancelActionZone.radius * 2}px`,
+            left: `${cancelActionZone.centerX - cancelActionZone.radius}px`,
+            top: `${cancelActionZone.centerY - cancelActionZone.radius}px`,
+            transform: cancelZoneHighlighted ? 'scale(1.12)' : 'scale(1)',
+            boxShadow: cancelZoneHighlighted
+              ? '0 0 0 6px rgba(248, 113, 113, 0.24), 0 10px 28px rgba(0, 0, 0, 0.3)'
+              : '0 8px 20px rgba(0, 0, 0, 0.3)',
+          }}
+        >
+          <span className="text-base leading-none">×</span>
         </div>
       ) : null}
 
