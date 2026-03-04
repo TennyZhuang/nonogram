@@ -1,22 +1,24 @@
 # Sound Effects
 
-This directory should contain the following sound effect files:
+Audio files in this directory:
 
-- `click.mp3` - Sound played when clicking a cell
-- `success.mp3` - Sound played when completing a puzzle
-- `error.mp3` - Sound played when making a mistake
+- `click.mp3` - Cell click / tap feedback
+- `success.mp3` - Puzzle completion jingle
+- `error.mp3` - Wrong guess notification
 
-## Placeholder Files
+## How These Were Generated
 
-The current implementation uses these paths. You can:
-1. Add your own MP3 files with these names
-2. Or use free sound effects from sources like:
-   - https://freesound.org/
-   - https://mixkit.co/free-sound-effects/
-   - https://www.zapsplat.com/
+Generated via the [ElevenLabs Text-to-Sound-Effects API](https://elevenlabs.io/docs/api-reference/sound-generation)
+using the `eleven_text_to_sound_v2` model. Prompts used:
 
-## Format
+- **click**: "Crisp satisfying pop click, like a bubble pop or wooden block tap, bright and punchy UI feedback sound, loud and clear" (0.5s)
+- **success**: "Cheerful ascending chime, bright puzzle complete jingle, happy short victory fanfare, casual game" (1.5s)
+- **error**: "Soft error buzz, gentle wrong answer sound, short low-pitched notification, casual puzzle game" (0.8s)
 
-- Format: MP3
-- Duration: Short (< 1 second recommended)
-- Volume: Normalized
+## Replacing
+
+Drop in your own files with the same names. Free sources:
+
+- https://freesound.org/
+- https://mixkit.co/free-sound-effects/
+- https://www.zapsplat.com/

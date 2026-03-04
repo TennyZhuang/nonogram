@@ -1,50 +1,82 @@
 import { act, renderHook } from '@testing-library/react'
 
-import { useSound } from '@/hooks/useSound'
-import { useSettingsStore } from '@/store/settings-store'
+const mockStart = vi.fn()
+const mockConnect = vi.fn()
+const mockGainConnect = vi.fn()
+
+const mockAudioContextInstance = {
+  state: 'running',
+  createBufferSource: vi.fn(() => ({
+    connect: mockConnect,
+    start: mockStart,
+    buffer: null as AudioBuffer | null,
+    playbackRate: { value: 1 },
+  })),
+  createGain: vi.fn(() => ({
+    connect: mockGainConnect,
+    gain: { value: 1 },
+  })),
+  resume: vi.fn().mockResolvedValue(undefined),
+  decodeAudioData: vi.fn().mockResolvedValue({ duration: 0.5 }),
+  destination: {},
+}
+
+vi.stubGlobal(
+  'AudioContext',
+  function MockAudioContext() {
+    return mockAudioContextInstance
+  },
+)
+
+vi.stubGlobal(
+  'fetch',
+  vi.fn().mockResolvedValue({
+    arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)),
+  }),
+)
 
 describe('useSound', () => {
-  const originalAudio = globalThis.Audio
-
   beforeEach(() => {
+    vi.resetModules()
+    vi.clearAllMocks()
     localStorage.clear()
+  })
+
+  it('does not play when sound is disabled', async () => {
+    const { useSettingsStore } = await import('@/store/settings-store')
+    const { useSound } = await import('@/hooks/useSound')
+
     useSettingsStore.setState({ soundEnabled: false })
-  })
-
-  afterEach(() => {
-    globalThis.Audio = originalAudio
-    vi.restoreAllMocks()
-  })
-
-  it('does not create audio when sound is disabled', () => {
-    const audioCtor = vi.fn()
-    globalThis.Audio = audioCtor as unknown as typeof Audio
-
     const { result } = renderHook(() => useSound())
     act(() => {
       result.current.play('click')
     })
 
-    expect(audioCtor).not.toHaveBeenCalled()
+    expect(mockAudioContextInstance.createBufferSource).not.toHaveBeenCalled()
   })
 
-  it('uses BASE_URL-prefixed sound paths when enabled', () => {
-    const play = vi.fn().mockResolvedValue(undefined)
-    const audioCtor = vi.fn(function (this: { currentTime: number; play: typeof play }) {
-      this.currentTime = 1
-      this.play = play
-    })
-    globalThis.Audio = audioCtor as unknown as typeof Audio
+  it('fetches sounds and plays via Web Audio API when enabled', async () => {
+    const { useSettingsStore } = await import('@/store/settings-store')
+    const { useSound } = await import('@/hooks/useSound')
 
     useSettingsStore.setState({ soundEnabled: true })
     const { result } = renderHook(() => useSound())
 
+    // Wait for buffers to load
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 10))
+    })
+
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining('sounds/click.mp3'),
+    )
+
     act(() => {
       result.current.play('click')
     })
 
-    expect(audioCtor).toHaveBeenCalledWith(`${import.meta.env.BASE_URL}sounds/click.mp3`)
-    expect(play).toHaveBeenCalledTimes(1)
-    expect(audioCtor.mock.instances[0]?.currentTime).toBe(0)
+    expect(mockAudioContextInstance.createBufferSource).toHaveBeenCalled()
+    expect(mockConnect).toHaveBeenCalled()
+    expect(mockStart).toHaveBeenCalledWith(0)
   })
 })
