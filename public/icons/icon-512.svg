@@ -1,61 +1,124 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Nonogram logo">
   <defs>
-    <linearGradient id="paper512" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#f8f1de" />
-      <stop offset="100%" stop-color="#f2e2bc" />
+    <linearGradient id="lacquer512" x1="12%" y1="10%" x2="88%" y2="92%">
+      <stop offset="0%" stop-color="#101820" />
+      <stop offset="55%" stop-color="#172837" />
+      <stop offset="100%" stop-color="#0f1d2a" />
     </linearGradient>
+    <radialGradient id="vignette" cx="52%" cy="42%" r="72%">
+      <stop offset="0%" stop-color="#27435b" stop-opacity="0.24" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="bronzeRing" x1="22%" y1="12%" x2="80%" y2="88%">
+      <stop offset="0%" stop-color="#f1d38b" />
+      <stop offset="42%" stop-color="#c89a46" />
+      <stop offset="100%" stop-color="#9f6f2e" />
+    </linearGradient>
+    <linearGradient id="jadeTile" x1="18%" y1="14%" x2="84%" y2="88%">
+      <stop offset="0%" stop-color="#d9e5cc" />
+      <stop offset="100%" stop-color="#b2c2a2" />
+    </linearGradient>
+    <pattern id="patina" width="26" height="26" patternUnits="userSpaceOnUse">
+      <circle cx="6" cy="7" r="1.4" fill="#7ab2b1" fill-opacity="0.10" />
+      <circle cx="17" cy="13" r="1.1" fill="#7ab2b1" fill-opacity="0.08" />
+      <circle cx="11" cy="22" r="1.2" fill="#7ab2b1" fill-opacity="0.09" />
+    </pattern>
   </defs>
-  <rect width="512" height="512" rx="96" fill="url(#paper512)" />
-  <rect x="34" y="34" width="444" height="444" rx="84" fill="none" stroke="#8a2f23" stroke-width="18" />
-  <rect x="88" y="88" width="336" height="336" rx="44" fill="#fff9eb" stroke="#c59a63" stroke-width="8" />
-  <g stroke="#5d3a1e" stroke-opacity="0.45" stroke-width="8">
-    <line x1="116" y1="116" x2="116" y2="396" />
-    <line x1="172" y1="116" x2="172" y2="396" />
-    <line x1="228" y1="116" x2="228" y2="396" />
-    <line x1="284" y1="116" x2="284" y2="396" />
-    <line x1="340" y1="116" x2="340" y2="396" />
-    <line x1="396" y1="116" x2="396" y2="396" />
-    <line x1="116" y1="116" x2="396" y2="116" />
-    <line x1="116" y1="172" x2="396" y2="172" />
-    <line x1="116" y1="228" x2="396" y2="228" />
-    <line x1="116" y1="284" x2="396" y2="284" />
-    <line x1="116" y1="340" x2="396" y2="340" />
-    <line x1="116" y1="396" x2="396" y2="396" />
+
+  <rect width="512" height="512" rx="104" fill="url(#lacquer512)" />
+  <rect width="512" height="512" rx="104" fill="url(#patina)" />
+  <rect width="512" height="512" rx="104" fill="url(#vignette)" />
+
+  <path d="M94 122 C124 84 176 84 206 122" fill="none" stroke="#c79a51" stroke-width="4" stroke-linecap="round" opacity="0.45" />
+  <path d="M306 390 C336 352 388 352 418 390" fill="none" stroke="#c79a51" stroke-width="4" stroke-linecap="round" opacity="0.45" />
+  <path d="M88 332 C118 294 170 294 200 332" fill="none" stroke="#c79a51" stroke-width="4" stroke-linecap="round" opacity="0.35" />
+  <path d="M312 180 C342 142 394 142 424 180" fill="none" stroke="#c79a51" stroke-width="4" stroke-linecap="round" opacity="0.35" />
+
+  <circle cx="256" cy="256" r="208" fill="none" stroke="url(#bronzeRing)" stroke-width="20" />
+  <circle cx="256" cy="256" r="184" fill="none" stroke="#e7c77f" stroke-width="4" stroke-opacity="0.55" />
+
+  <g stroke="#d7b36a" stroke-width="5" stroke-linecap="round" opacity="0.7">
+    <line x1="256" y1="62" x2="256" y2="80" />
+    <line x1="256" y1="432" x2="256" y2="450" />
+    <line x1="62" y1="256" x2="80" y2="256" />
+    <line x1="432" y1="256" x2="450" y2="256" />
+    <line x1="116" y1="116" x2="129" y2="129" />
+    <line x1="383" y1="383" x2="396" y2="396" />
+    <line x1="116" y1="396" x2="129" y2="383" />
+    <line x1="383" y1="129" x2="396" y2="116" />
   </g>
-  <g fill="#8a2f23">
-    <rect x="236" y="124" width="40" height="40" rx="5" />
-    <rect x="180" y="180" width="40" height="40" rx="5" />
-    <rect x="236" y="180" width="40" height="40" rx="5" />
-    <rect x="292" y="180" width="40" height="40" rx="5" />
-    <rect x="124" y="236" width="40" height="40" rx="5" />
-    <rect x="180" y="236" width="40" height="40" rx="5" />
-    <rect x="236" y="236" width="40" height="40" rx="5" />
-    <rect x="292" y="236" width="40" height="40" rx="5" />
-    <rect x="348" y="236" width="40" height="40" rx="5" />
-    <rect x="180" y="292" width="40" height="40" rx="5" />
-    <rect x="236" y="292" width="40" height="40" rx="5" />
-    <rect x="292" y="292" width="40" height="40" rx="5" />
-    <rect x="236" y="348" width="40" height="40" rx="5" />
+
+  <rect x="138" y="138" width="236" height="236" rx="30" fill="url(#jadeTile)" stroke="#a97a38" stroke-width="8" />
+
+  <g fill="#8b6b3f" fill-opacity="0.82">
+    <rect x="158" y="112" width="28" height="12" rx="4" />
+    <rect x="191" y="112" width="52" height="12" rx="4" />
+    <rect x="248" y="112" width="24" height="12" rx="4" />
+    <rect x="277" y="112" width="46" height="12" rx="4" />
+    <rect x="328" y="112" width="18" height="12" rx="4" />
+
+    <rect x="112" y="164" width="12" height="24" rx="4" />
+    <rect x="112" y="193" width="12" height="48" rx="4" />
+    <rect x="112" y="246" width="12" height="18" rx="4" />
+    <rect x="112" y="269" width="12" height="64" rx="4" />
+    <rect x="112" y="338" width="12" height="18" rx="4" />
   </g>
-  <path
-    d="M106 136 C160 72 256 60 334 94 C372 112 400 142 410 178"
-    fill="none"
-    stroke="#2b1a0f"
-    stroke-width="20"
-    stroke-linecap="round"
-  />
-  <path
-    d="M388 222 C364 290 312 334 244 350 C188 364 136 352 102 324"
-    fill="none"
-    stroke="#2b1a0f"
-    stroke-width="18"
-    stroke-linecap="round"
-  />
-  <path
-    d="M132 388 C168 362 208 362 246 388 C282 414 320 414 356 388"
-    fill="none"
-    stroke="#8a2f23"
-    stroke-width="14"
-    stroke-linecap="round"
-  />
+
+  <g stroke="#705833" stroke-width="2.8" stroke-opacity="0.4">
+    <line x1="158" y1="158" x2="158" y2="354" />
+    <line x1="186" y1="158" x2="186" y2="354" />
+    <line x1="214" y1="158" x2="214" y2="354" />
+    <line x1="242" y1="158" x2="242" y2="354" />
+    <line x1="270" y1="158" x2="270" y2="354" />
+    <line x1="298" y1="158" x2="298" y2="354" />
+    <line x1="326" y1="158" x2="326" y2="354" />
+    <line x1="354" y1="158" x2="354" y2="354" />
+
+    <line x1="158" y1="158" x2="354" y2="158" />
+    <line x1="158" y1="186" x2="354" y2="186" />
+    <line x1="158" y1="214" x2="354" y2="214" />
+    <line x1="158" y1="242" x2="354" y2="242" />
+    <line x1="158" y1="270" x2="354" y2="270" />
+    <line x1="158" y1="298" x2="354" y2="298" />
+    <line x1="158" y1="326" x2="354" y2="326" />
+    <line x1="158" y1="354" x2="354" y2="354" />
+  </g>
+
+  <g fill="#b73d2b">
+    <rect x="242" y="158" width="28" height="28" rx="5" />
+
+    <rect x="214" y="186" width="28" height="28" rx="5" />
+    <rect x="242" y="186" width="28" height="28" rx="5" />
+    <rect x="270" y="186" width="28" height="28" rx="5" />
+
+    <rect x="186" y="214" width="28" height="28" rx="5" />
+    <rect x="214" y="214" width="28" height="28" rx="5" />
+    <rect x="242" y="214" width="28" height="28" rx="5" />
+    <rect x="270" y="214" width="28" height="28" rx="5" />
+    <rect x="298" y="214" width="28" height="28" rx="5" />
+
+    <rect x="158" y="242" width="28" height="28" rx="5" />
+    <rect x="186" y="242" width="28" height="28" rx="5" />
+    <rect x="214" y="242" width="28" height="28" rx="5" />
+    <rect x="242" y="242" width="28" height="28" rx="5" />
+    <rect x="270" y="242" width="28" height="28" rx="5" />
+    <rect x="298" y="242" width="28" height="28" rx="5" />
+    <rect x="326" y="242" width="28" height="28" rx="5" />
+
+    <rect x="214" y="270" width="28" height="28" rx="5" />
+    <rect x="242" y="270" width="28" height="28" rx="5" />
+    <rect x="270" y="270" width="28" height="28" rx="5" />
+
+    <rect x="214" y="298" width="28" height="28" rx="5" />
+    <rect x="242" y="298" width="28" height="28" rx="5" />
+    <rect x="270" y="298" width="28" height="28" rx="5" />
+
+    <rect x="242" y="326" width="28" height="28" rx="5" />
+  </g>
+
+  <g>
+    <rect x="78" y="78" width="74" height="74" rx="14" fill="#ab342b" fill-opacity="0.96" />
+    <rect x="97" y="97" width="36" height="36" rx="4" fill="#f4dca4" />
+    <rect x="107" y="107" width="16" height="16" rx="2" fill="#ab342b" />
+  </g>
 </svg>
