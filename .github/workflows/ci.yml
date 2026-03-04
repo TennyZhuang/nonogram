@@ -55,6 +55,8 @@ jobs:
       - run: npm ci
       - run: npx playwright install chromium --with-deps
       - run: npm run test:e2e
+        env:
+          GITHUB_ACTIONS: ''
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
