@@ -15,7 +15,7 @@ const soundFiles: Record<SoundType, string[]> = {
 }
 
 const soundVolumes: Record<SoundType, number> = {
-  click: 0.42,
+  click: 0.7,
   success: 0.6,
   error: 0.55,
 }
