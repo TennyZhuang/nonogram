@@ -195,9 +195,11 @@ function drawClues(
   colors: BoardColors,
 ) {
   const clueEdgeSafeInset = 4
+  const compactMode = layout.rowClueCompact || layout.colClueCompact
+  const clueOffset = compactMode ? 4 : 6
   const resolveClueFontSize = (): number => {
-    const preferred = Math.max(10, Math.floor(layout.cellSize * 0.45))
-    const minFontSize = 8
+    const preferred = Math.max(compactMode ? 9 : 10, Math.floor(layout.cellSize * 0.45))
+    const minFontSize = compactMode ? 7 : 8
 
     const maxRowNumberCount = clues.rows.reduce(
       (max, numbers) => Math.max(max, numbers.length),
@@ -209,7 +211,10 @@ function drawClues(
     )
 
     for (let candidate = preferred; candidate >= minFontSize; candidate -= 1) {
-      const candidateGap = Math.max(3, Math.floor(candidate * 0.35))
+      const candidateGap = Math.max(
+        compactMode ? 2 : 3,
+        Math.floor(candidate * (compactMode ? 0.25 : 0.35)),
+      )
       ctx.font = `${candidate}px ui-monospace, SFMono-Regular, Menlo, monospace`
 
       let maxRowWidth = 0
@@ -228,10 +233,10 @@ function drawClues(
         }
       }
 
-      const leftMostX = layout.gridOriginX - 6 - maxRowWidth
+      const leftMostX = layout.gridOriginX - clueOffset - maxRowWidth
       const topMostY =
         layout.gridOriginY -
-        6 -
+        clueOffset -
         Math.max(0, maxColNumberCount - 1) * (candidate + 2) -
         candidate
 
@@ -248,7 +253,10 @@ function drawClues(
   }
 
   const fontSize = resolveClueFontSize()
-  const numberGap = Math.max(3, Math.floor(fontSize * 0.35))
+  const numberGap = Math.max(
+    compactMode ? 2 : 3,
+    Math.floor(fontSize * (compactMode ? 0.25 : 0.35)),
+  )
   ctx.font = `${fontSize}px ui-monospace, SFMono-Regular, Menlo, monospace`
   ctx.textBaseline = 'middle'
 
@@ -264,7 +272,7 @@ function drawClues(
     const numbers = clues.rows[row]
     const resolved = clueProgress.rows[row] ?? []
     const y = layout.gridOriginY + row * layout.cellSize + layout.cellSize / 2
-    let cursorX = layout.gridOriginX - 6
+    let cursorX = layout.gridOriginX - clueOffset
     ctx.textAlign = 'right'
     for (let index = numbers.length - 1; index >= 0; index -= 1) {
       const clueText = String(numbers[index])
@@ -283,7 +291,7 @@ function drawClues(
     for (let i = 0; i < numbers.length; i += 1) {
       const y =
         layout.gridOriginY -
-        6 -
+        clueOffset -
         (numbers.length - i - 1) * (fontSize + 2) -
         fontSize / 2
       ctx.fillStyle = getClueColor(resolved[i] ?? false, Boolean(isActive))

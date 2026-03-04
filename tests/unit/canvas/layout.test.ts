@@ -21,6 +21,8 @@ describe('canvas layout', () => {
       maxColClueLength: 3,
     })
     expect(layout.cellSize).toBeGreaterThanOrEqual(18)
+    expect(layout.rowClueCompact).toBe(false)
+    expect(layout.colClueCompact).toBe(false)
   })
 
   it('keeps 15x15 cells above 20px on wider phone', () => {
@@ -50,5 +52,19 @@ describe('canvas layout', () => {
       maxColClueLength: 1,
     })
     expect(longClueLayout.clueAreaWidth).toBeGreaterThan(shortClueLayout.clueAreaWidth)
+  })
+
+  it('compresses oversized clue area to keep 15x15 touch target', () => {
+    const layout = calculateBoardLayout({
+      canvasWidth: 375,
+      canvasHeight: 812,
+      gridSize: 15,
+      maxRowClueLength: 12,
+      maxColClueLength: 3,
+    })
+
+    expect(layout.cellSize).toBeGreaterThanOrEqual(20)
+    expect(layout.rowClueCompact).toBe(true)
+    expect(layout.clueAreaWidth).toBeLessThan(12 * 7 + 8)
   })
 })
