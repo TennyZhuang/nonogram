@@ -138,6 +138,8 @@ test('滑过取消按钮会撤销当前拖动手势', async ({ page }) => {
   if (cancelBox) {
     await page.mouse.move(cancelBox.x + cancelBox.width / 2, cancelBox.y + cancelBox.height / 2)
   }
+  await expect(cancelZone).toHaveAttribute('data-active', 'true')
+  await expect(cancelZone).toBeVisible()
   await page.mouse.up()
 
   const afterBoard = await page.evaluate(() => {
@@ -148,4 +150,55 @@ test('滑过取消按钮会撤销当前拖动手势', async ({ page }) => {
   })
 
   expect(afterBoard).toBe(beforeBoard)
+})
+
+test('滑过取消按钮后离开再抬手会正常提交', async ({ page }) => {
+  await page.goto('/')
+  await skipOnboardingIfVisible(page)
+  await page.getByRole('button', { name: /D1/ }).click()
+
+  const board = page.getByTestId('game-board-canvas')
+  const box = await board.boundingBox()
+  expect(box).not.toBeNull()
+  if (!box) {
+    return
+  }
+
+  const startX = box.x + box.width * 0.5
+  const startY = box.y + box.height * 0.5
+  const releaseX = box.x + box.width * 0.66
+  const releaseY = startY
+
+  const beforeBoard = await page.evaluate(() => {
+    const win = window as unknown as {
+      __gameStore?: { getState: () => { game?: { board: unknown } } }
+    }
+    return JSON.stringify(win.__gameStore?.getState().game?.board ?? null)
+  })
+
+  await page.mouse.move(startX, startY)
+  await page.mouse.down()
+
+  const cancelZone = page.getByTestId('gesture-cancel-zone')
+  await expect(cancelZone).toBeVisible()
+
+  const cancelBox = await cancelZone.boundingBox()
+  expect(cancelBox).not.toBeNull()
+  if (cancelBox) {
+    await page.mouse.move(cancelBox.x + cancelBox.width / 2, cancelBox.y + cancelBox.height / 2)
+  }
+  await expect(cancelZone).toHaveAttribute('data-active', 'true')
+
+  await page.mouse.move(releaseX, releaseY)
+  await expect(cancelZone).toHaveAttribute('data-active', 'false')
+  await page.mouse.up()
+
+  const afterBoard = await page.evaluate(() => {
+    const win = window as unknown as {
+      __gameStore?: { getState: () => { game?: { board: unknown } } }
+    }
+    return JSON.stringify(win.__gameStore?.getState().game?.board ?? null)
+  })
+
+  expect(afterBoard).not.toBe(beforeBoard)
 })

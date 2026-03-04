@@ -73,12 +73,16 @@ function buildCancelActionZone(
 function isPointInsideCancelActionZone(
   point: { x: number; y: number },
   zone: CancelActionZone,
+  hitScale = 1,
 ): boolean {
   const dx = point.x - zone.centerX
   const dy = point.y - zone.centerY
-  const hitRadius = zone.radius * 1.12
+  const hitRadius = zone.radius * hitScale
   return dx * dx + dy * dy <= hitRadius * hitRadius
 }
+
+const CANCEL_ZONE_HOVER_HIT_SCALE = 1.35
+const CANCEL_ZONE_RELEASE_HIT_SCALE = 1.35
 
 function getMaxRowClueLength(puzzle: PuzzleDefinition): number {
   return Math.max(...puzzle.clues.rows.map((clue) => clue.join(' ').length), 1)
@@ -142,6 +146,7 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
   const activeTouchIdRef = useRef<number | null>(null)
   const interactionLockedRef = useRef(false)
   const cancelActionZoneRef = useRef<CancelActionZone | null>(null)
+  const cancelZoneHighlightedRef = useRef(false)
   const autoMarkAnchorsRef = useRef<CellCoord[]>([])
   const previousBoardRef = useRef<BoardState>(board)
   const debugIndexRef = useRef(0)
@@ -151,6 +156,7 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
   const [activeCell, setActiveCell] = useState<CellCoord | null>(null)
   const [previewStartCell, setPreviewStartCell] = useState<CellCoord | null>(null)
   const [previewPhase, setPreviewPhase] = useState<InputControllerSnapshot['phase']>('idle')
+  const [cancelZoneHighlighted, setCancelZoneHighlightedState] = useState(false)
   const [impactCount, setImpactCount] = useState(0)
   const [debugLogs, setDebugLogs] = useState<string[]>([])
   const [debugActionTip, setDebugActionTip] = useState('')
@@ -348,12 +354,33 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
     appendDebugLog('interaction-lock', { locked })
   }, [appendDebugLog])
 
+  const setCancelZoneHighlighted = useCallback((highlighted: boolean) => {
+    if (cancelZoneHighlightedRef.current === highlighted) {
+      return
+    }
+    cancelZoneHighlightedRef.current = highlighted
+    setCancelZoneHighlightedState(highlighted)
+  }, [])
+
+  const updateCancelZoneHighlight = useCallback(
+    (point: { x: number; y: number }) => {
+      const zone = cancelActionZoneRef.current
+      const highlighted = zone
+        ? isPointInsideCancelActionZone(point, zone, CANCEL_ZONE_HOVER_HIT_SCALE)
+        : false
+      setCancelZoneHighlighted(highlighted)
+      return highlighted
+    },
+    [setCancelZoneHighlighted],
+  )
+
   const startPreview = useCallback(
     (point: { x: number; y: number }) => {
       const controller = controllerRef.current
       if (!controller) {
         return false
       }
+      setCancelZoneHighlighted(false)
       const snapshot = controller.pointerDown(point)
       updateFromSnapshot(snapshot)
       const started = snapshot.phase === 'previewing'
@@ -365,7 +392,7 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
       })
       return started
     },
-    [appendDebugLog, setInteractionLock, updateFromSnapshot],
+    [appendDebugLog, setCancelZoneHighlighted, setInteractionLock, updateFromSnapshot],
   )
 
   const updatePreview = useCallback(
@@ -374,13 +401,14 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
       if (!controller) {
         return
       }
+      updateCancelZoneHighlight(point)
       updateFromSnapshot(controller.pointerMove(point))
       appendDebugLog('preview-move', {
         x: Math.round(point.x),
         y: Math.round(point.y),
       })
     },
-    [appendDebugLog, updateFromSnapshot],
+    [appendDebugLog, updateCancelZoneHighlight, updateFromSnapshot],
   )
 
   const commitPreview = useCallback(
@@ -392,13 +420,20 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
       const snapshot = controller.getSnapshot()
       autoMarkAnchorsRef.current = collectAutoMarkAnchors(snapshot)
       updateFromSnapshot(controller.pointerUp(point))
+      setCancelZoneHighlighted(false)
       setInteractionLock(false)
       appendDebugLog('preview-commit', {
         x: Math.round(point.x),
         y: Math.round(point.y),
       })
     },
-    [appendDebugLog, collectAutoMarkAnchors, setInteractionLock, updateFromSnapshot],
+    [
+      appendDebugLog,
+      collectAutoMarkAnchors,
+      setCancelZoneHighlighted,
+      setInteractionLock,
+      updateFromSnapshot,
+    ],
   )
 
   const cancelPreview = useCallback(() => {
@@ -409,9 +444,16 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
     const snapshot = controller.getSnapshot()
     autoMarkAnchorsRef.current = collectAutoMarkAnchors(snapshot)
     updateFromSnapshot(controller.pointerCancel())
+    setCancelZoneHighlighted(false)
     setInteractionLock(false)
     appendDebugLog('preview-cancel')
-  }, [appendDebugLog, collectAutoMarkAnchors, setInteractionLock, updateFromSnapshot])
+  }, [
+    appendDebugLog,
+    collectAutoMarkAnchors,
+    setCancelZoneHighlighted,
+    setInteractionLock,
+    updateFromSnapshot,
+  ])
 
   const abortPreview = useCallback(
     (reason: string) => {
@@ -421,15 +463,18 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
       }
       autoMarkAnchorsRef.current = []
       updateFromSnapshot(controller.pointerAbort())
+      setCancelZoneHighlighted(false)
       setInteractionLock(false)
       appendDebugLog('preview-abort', { reason })
     },
-    [appendDebugLog, setInteractionLock, updateFromSnapshot],
+    [appendDebugLog, setCancelZoneHighlighted, setInteractionLock, updateFromSnapshot],
   )
 
-  const shouldAbortAtPoint = useCallback((point: { x: number; y: number }): boolean => {
+  const shouldAbortOnReleaseAtPoint = useCallback((point: { x: number; y: number }): boolean => {
     const zone = cancelActionZoneRef.current
-    return zone ? isPointInsideCancelActionZone(point, zone) : false
+    return zone
+      ? isPointInsideCancelActionZone(point, zone, CANCEL_ZONE_RELEASE_HIT_SCALE)
+      : false
   }, [])
 
   useEffect(() => {
@@ -556,16 +601,6 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
           id: event.pointerId,
           pointerType: event.pointerType,
         })
-        if (shouldAbortAtPoint(point)) {
-          activePointerIdRef.current = null
-          releaseCapture(event.pointerId)
-          appendDebugLog('pointer-abort-zone-hit', {
-            id: event.pointerId,
-            pointerType: event.pointerType,
-          })
-          abortPreview('cancel-zone')
-          return
-        }
         updatePreview(point)
       }
 
@@ -576,11 +611,18 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
         activePointerIdRef.current = null
         releaseCapture(event.pointerId)
         event.preventDefault()
+        const point = pointFromClient(event.clientX, event.clientY, canvas)
+        const shouldAbort = shouldAbortOnReleaseAtPoint(point)
         appendDebugLog('pointer-up', {
           id: event.pointerId,
           pointerType: event.pointerType,
+          cancelByZone: shouldAbort,
         })
-        commitPreview(pointFromClient(event.clientX, event.clientY, canvas))
+        if (shouldAbort) {
+          abortPreview('cancel-zone-release')
+          return
+        }
+        commitPreview(point)
       }
 
       const onPointerCancel = (event: PointerEvent) => {
@@ -651,14 +693,6 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
       appendDebugLog('touch-move', {
         id: touch.identifier,
       })
-      if (shouldAbortAtPoint(point)) {
-        activeTouchIdRef.current = null
-        appendDebugLog('touch-abort-zone-hit', {
-          id: touch.identifier,
-        })
-        abortPreview('cancel-zone')
-        return
-      }
       updatePreview(point)
     }
 
@@ -675,10 +709,17 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
 
       activeTouchIdRef.current = null
       event.preventDefault()
+      const point = pointFromClient(touch.clientX, touch.clientY, canvas)
+      const shouldAbort = shouldAbortOnReleaseAtPoint(point)
       appendDebugLog('touch-end', {
         id: touch.identifier,
+        cancelByZone: shouldAbort,
       })
-      commitPreview(pointFromClient(touch.clientX, touch.clientY, canvas))
+      if (shouldAbort) {
+        abortPreview('cancel-zone-release')
+        return
+      }
+      commitPreview(point)
     }
 
     const onTouchCancel = (event: TouchEvent) => {
@@ -709,7 +750,7 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
     cancelPreview,
     commitPreview,
     startPreview,
-    shouldAbortAtPoint,
+    shouldAbortOnReleaseAtPoint,
     updatePreview,
   ])
 
@@ -805,13 +846,22 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
       {cancelActionZone ? (
         <div
           data-testid="gesture-cancel-zone"
+          data-active={cancelZoneHighlighted ? 'true' : 'false'}
           aria-hidden="true"
-          className="pointer-events-none absolute z-20 flex items-center justify-center rounded-full border border-white/70 bg-black/45 text-white shadow-lg backdrop-blur-[1px]"
+          className={`pointer-events-none absolute z-20 flex items-center justify-center rounded-full text-white backdrop-blur-[1px] transition-[transform,background-color,border-color,box-shadow] duration-150 ${
+            cancelZoneHighlighted
+              ? 'border-red-200/90 bg-red-500/65 shadow-lg'
+              : 'border-white/70 bg-black/45 shadow-lg'
+          }`}
           style={{
             width: `${cancelActionZone.radius * 2}px`,
             height: `${cancelActionZone.radius * 2}px`,
             left: `${cancelActionZone.centerX - cancelActionZone.radius}px`,
             top: `${cancelActionZone.centerY - cancelActionZone.radius}px`,
+            transform: cancelZoneHighlighted ? 'scale(1.12)' : 'scale(1)',
+            boxShadow: cancelZoneHighlighted
+              ? '0 0 0 6px rgba(248, 113, 113, 0.24), 0 10px 28px rgba(0, 0, 0, 0.3)'
+              : '0 8px 20px rgba(0, 0, 0, 0.3)',
           }}
         >
           <span className="text-base leading-none">×</span>
