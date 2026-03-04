@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import type { DifficultyTier } from '@/core/types'
+import { readDebugInputEnabled } from '@/lib/debug-input'
 import { hydrateFromStorage, saveOnLifecycle, startAutoSave } from '@/persistence/sync'
 import { useGameStore } from '@/store/game-store'
 import { useSettingsStore } from '@/store/settings-store'
@@ -25,6 +26,7 @@ function App() {
     useState<BeforeInstallPromptEvent | null>(null)
   const currentPuzzle = useGameStore((state) => state.currentPuzzle)
   const game = useGameStore((state) => state.game)
+  const [debugEnabled] = useState(readDebugInputEnabled)
   const startGameByTier = useGameStore((state) => state.startGameByTier)
   const warmupPools = useGameStore((state) => state.warmupPools)
   const theme = useSettingsStore((state) => state.theme)
@@ -158,9 +160,11 @@ function App() {
     <>
       {pageContent}
       <SoundToggle />
-      <div className="pointer-events-none fixed bottom-2 left-2 z-50 rounded bg-black/70 px-2 py-1 text-[10px] text-white">
-        构建时间：{buildLabel}
-      </div>
+      {debugEnabled ? (
+        <div className="pointer-events-none fixed bottom-2 left-2 z-50 rounded bg-black/70 px-2 py-1 text-[10px] text-white">
+          构建时间：{buildLabel}
+        </div>
+      ) : null}
     </>
   )
 }
