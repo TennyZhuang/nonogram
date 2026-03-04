@@ -50,7 +50,7 @@ export function HomePage({
         </button>
       ) : null}
 
-      <section>
+      <section className="mb-8">
         <h2 className="mb-3 text-sm font-semibold text-muted-foreground">难度选择</h2>
         <DifficultySelector onSelect={onSelectDifficulty} />
       </section>
