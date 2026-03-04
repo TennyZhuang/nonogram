@@ -116,6 +116,17 @@ describe('input-controller', () => {
     ])
   })
 
+  it('drops the preview without commit on pointer abort', () => {
+    const { controller, committed, pointOf } = createHarness()
+    controller.pointerDown(pointOf(5, 5))
+    controller.pointerMove(pointOf(5, 7))
+    const snapshot = controller.pointerAbort()
+
+    expect(snapshot.phase).toBe('idle')
+    expect(snapshot.previewCells).toEqual([])
+    expect(committed).toHaveLength(0)
+  })
+
   it('still does not commit when no preview exists', () => {
     const { controller, committed, outsidePoint } = createHarness()
     controller.pointerUp(outsidePoint)

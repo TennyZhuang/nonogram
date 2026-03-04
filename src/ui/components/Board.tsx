@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { createInputController, type InputControllerSnapshot } from '@/canvas/input-controller'
-import { pixelToCell, type CellCoord } from '@/canvas/hit-map'
+import { cellToPixel, pixelToCell, type CellCoord } from '@/canvas/hit-map'
 import { calculateBoardLayout, type BoardLayout } from '@/canvas/layout'
 import {
   collectResolvedSegmentBoundaryCells,
@@ -29,6 +29,55 @@ interface BoardProps {
 interface CanvasSize {
   width: number
   height: number
+}
+
+interface CancelActionZone {
+  centerX: number
+  centerY: number
+  radius: number
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value))
+}
+
+function buildCancelActionZone(
+  startCell: CellCoord,
+  layout: BoardLayout,
+  canvasSize: CanvasSize,
+): CancelActionZone {
+  const startRect = cellToPixel(startCell.row, startCell.col, layout)
+  const radius = Math.round(clamp(layout.cellSize * 0.42, 15, 22))
+  const gap = Math.max(6, Math.round(layout.cellSize * 0.22))
+  const minX = radius + 4
+  const maxX = canvasSize.width - radius - 4
+  const minY = radius + 4
+  const maxY = canvasSize.height - radius - 4
+
+  const leftX = startRect.x - radius - gap
+  const rightX = startRect.x + startRect.width + radius + gap
+  const hasLeftRoom = leftX >= minX
+  const preferredX = hasLeftRoom ? leftX : rightX
+
+  const aboveY = startRect.y - radius - gap
+  const belowY = startRect.y + startRect.height + radius + gap
+  const preferredY = aboveY >= minY ? aboveY : belowY
+
+  return {
+    centerX: clamp(preferredX, minX, maxX),
+    centerY: clamp(preferredY, minY, maxY),
+    radius,
+  }
+}
+
+function isPointInsideCancelActionZone(
+  point: { x: number; y: number },
+  zone: CancelActionZone,
+): boolean {
+  const dx = point.x - zone.centerX
+  const dy = point.y - zone.centerY
+  const hitRadius = zone.radius * 1.12
+  return dx * dx + dy * dy <= hitRadius * hitRadius
 }
 
 function getMaxRowClueLength(puzzle: PuzzleDefinition): number {
@@ -92,6 +141,7 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
   const activePointerIdRef = useRef<number | null>(null)
   const activeTouchIdRef = useRef<number | null>(null)
   const interactionLockedRef = useRef(false)
+  const cancelActionZoneRef = useRef<CancelActionZone | null>(null)
   const autoMarkAnchorsRef = useRef<CellCoord[]>([])
   const previousBoardRef = useRef<BoardState>(board)
   const debugIndexRef = useRef(0)
@@ -99,6 +149,8 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
   const [canvasSize, setCanvasSize] = useState<CanvasSize>({ width: 360, height: 620 })
   const [previewCells, setPreviewCells] = useState<CellCoord[]>([])
   const [activeCell, setActiveCell] = useState<CellCoord | null>(null)
+  const [previewStartCell, setPreviewStartCell] = useState<CellCoord | null>(null)
+  const [previewPhase, setPreviewPhase] = useState<InputControllerSnapshot['phase']>('idle')
   const [impactCount, setImpactCount] = useState(0)
   const [debugLogs, setDebugLogs] = useState<string[]>([])
   const [debugActionTip, setDebugActionTip] = useState('')
@@ -157,6 +209,17 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
     const themedRoot = document.querySelector(`:root[data-theme='${theme}']`)
     return getBoardColorsFromCss(themedRoot ?? document.documentElement)
   }, [theme])
+
+  const cancelActionZone = useMemo<CancelActionZone | null>(() => {
+    if (previewPhase !== 'previewing' || !previewStartCell) {
+      return null
+    }
+    return buildCancelActionZone(previewStartCell, layout, canvasSize)
+  }, [canvasSize, layout, previewPhase, previewStartCell])
+
+  useEffect(() => {
+    cancelActionZoneRef.current = cancelActionZone
+  }, [cancelActionZone])
 
   useEffect(() => {
     const container = containerRef.current
@@ -224,6 +287,8 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
         onBatchCommit(cells, mode)
         setPreviewCells([])
         setActiveCell(null)
+        setPreviewStartCell(null)
+        setPreviewPhase('idle')
         setImpactCount(0)
       },
     })
@@ -264,9 +329,11 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
   }, [activeCell, board, boardColors, canvasSize.height, canvasSize.width, layout, mode, previewCells, puzzle])
 
   const updateFromSnapshot = useCallback(
-    (snapshot: ReturnType<ReturnType<typeof createInputController>['getSnapshot']>) => {
+    (snapshot: InputControllerSnapshot) => {
       setPreviewCells(snapshot.previewCells)
       setActiveCell(snapshot.activeCell)
+      setPreviewStartCell(snapshot.startCell)
+      setPreviewPhase(snapshot.phase)
       setImpactCount(snapshot.previewCells.length)
     },
     [],
@@ -345,6 +412,25 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
     setInteractionLock(false)
     appendDebugLog('preview-cancel')
   }, [appendDebugLog, collectAutoMarkAnchors, setInteractionLock, updateFromSnapshot])
+
+  const abortPreview = useCallback(
+    (reason: string) => {
+      const controller = controllerRef.current
+      if (!controller) {
+        return
+      }
+      autoMarkAnchorsRef.current = []
+      updateFromSnapshot(controller.pointerAbort())
+      setInteractionLock(false)
+      appendDebugLog('preview-abort', { reason })
+    },
+    [appendDebugLog, setInteractionLock, updateFromSnapshot],
+  )
+
+  const shouldAbortAtPoint = useCallback((point: { x: number; y: number }): boolean => {
+    const zone = cancelActionZoneRef.current
+    return zone ? isPointInsideCancelActionZone(point, zone) : false
+  }, [])
 
   useEffect(() => {
     if (!autoMarkEnabled) {
@@ -465,11 +551,22 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
           return
         }
         event.preventDefault()
+        const point = pointFromClient(event.clientX, event.clientY, canvas)
         appendDebugLog('pointer-move', {
           id: event.pointerId,
           pointerType: event.pointerType,
         })
-        updatePreview(pointFromClient(event.clientX, event.clientY, canvas))
+        if (shouldAbortAtPoint(point)) {
+          activePointerIdRef.current = null
+          releaseCapture(event.pointerId)
+          appendDebugLog('pointer-abort-zone-hit', {
+            id: event.pointerId,
+            pointerType: event.pointerType,
+          })
+          abortPreview('cancel-zone')
+          return
+        }
+        updatePreview(point)
       }
 
       const onPointerUp = (event: PointerEvent) => {
@@ -550,10 +647,19 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
       }
 
       event.preventDefault()
+      const point = pointFromClient(touch.clientX, touch.clientY, canvas)
       appendDebugLog('touch-move', {
         id: touch.identifier,
       })
-      updatePreview(pointFromClient(touch.clientX, touch.clientY, canvas))
+      if (shouldAbortAtPoint(point)) {
+        activeTouchIdRef.current = null
+        appendDebugLog('touch-abort-zone-hit', {
+          id: touch.identifier,
+        })
+        abortPreview('cancel-zone')
+        return
+      }
+      updatePreview(point)
     }
 
     const onTouchEnd = (event: TouchEvent) => {
@@ -598,10 +704,12 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
       window.removeEventListener('touchcancel', onTouchCancel)
     }
   }, [
+    abortPreview,
     appendDebugLog,
     cancelPreview,
     commitPreview,
     startPreview,
+    shouldAbortAtPoint,
     updatePreview,
   ])
 
@@ -691,6 +799,22 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
       {impactCount > 1 ? (
         <div className="pointer-events-none absolute left-1/2 top-2 z-10 -translate-x-1/2 rounded-full bg-black/70 px-3 py-1 text-xs text-white">
           影响 {impactCount} 格
+        </div>
+      ) : null}
+
+      {cancelActionZone ? (
+        <div
+          data-testid="gesture-cancel-zone"
+          aria-hidden="true"
+          className="pointer-events-none absolute z-20 flex items-center justify-center rounded-full border border-white/70 bg-black/45 text-white shadow-lg backdrop-blur-[1px]"
+          style={{
+            width: `${cancelActionZone.radius * 2}px`,
+            height: `${cancelActionZone.radius * 2}px`,
+            left: `${cancelActionZone.centerX - cancelActionZone.radius}px`,
+            top: `${cancelActionZone.centerY - cancelActionZone.radius}px`,
+          }}
+        >
+          <span className="text-base leading-none">×</span>
         </div>
       ) : null}
 

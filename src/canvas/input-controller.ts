@@ -10,6 +10,7 @@ export interface PointerPoint {
 export interface InputControllerSnapshot {
   previewCells: CellCoord[]
   activeCell: CellCoord | null
+  startCell: CellCoord | null
   lockedDirection: LockDirection
   phase: 'idle' | 'previewing'
 }
@@ -25,6 +26,7 @@ export interface InputController {
   pointerMove: (point: PointerPoint) => InputControllerSnapshot
   pointerUp: (point: PointerPoint) => InputControllerSnapshot
   pointerCancel: () => InputControllerSnapshot
+  pointerAbort: () => InputControllerSnapshot
   getSnapshot: () => InputControllerSnapshot
 }
 
@@ -64,6 +66,7 @@ function toSnapshot(state: State): InputControllerSnapshot {
   return {
     previewCells: [...state.previewCells],
     activeCell: state.activeCell,
+    startCell: state.startCell,
     lockedDirection: state.lockedDirection,
     phase: state.phase,
   }
@@ -177,6 +180,13 @@ export function createInputController(options: InputControllerOptions): InputCon
       }
       if (state.previewCells.length > 0) {
         options.onCommit([...state.previewCells])
+      }
+      return reset()
+    },
+
+    pointerAbort() {
+      if (state.phase !== 'previewing') {
+        return toSnapshot(state)
       }
       return reset()
     },
