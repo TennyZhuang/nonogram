@@ -29,6 +29,7 @@ interface RenderOptions {
   solution: boolean[][]
   clues: PuzzleClues
   layout: BoardLayout
+  highlightResolvedClues?: boolean
   mode?: InputMode
   previewCells?: CellCoord[]
   activeCell?: CellCoord | null
@@ -193,6 +194,7 @@ function drawClues(
   layout: BoardLayout,
   activeCell: CellCoord | null,
   colors: BoardColors,
+  highlightResolvedClues: boolean,
 ) {
   const clueEdgeSafeInset = 4
   const resolveClueFontSize = (): number => {
@@ -253,7 +255,7 @@ function drawClues(
   ctx.textBaseline = 'middle'
 
   const getClueColor = (resolved: boolean, active: boolean): string => {
-    if (resolved) {
+    if (resolved && highlightResolvedClues) {
       return active ? colors.clueResolvedActive : colors.clueResolved
     }
     return active ? colors.clueActive : colors.clueText
@@ -393,6 +395,7 @@ export function collectResolvedSegmentBoundaryCells(
 
 export function renderBoard(ctx: CanvasRenderingContext2D, options: RenderOptions): void {
   const { board, solution, clues, layout } = options
+  const highlightResolvedClues = options.highlightResolvedClues ?? true
   const mode = options.mode ?? 'fill'
   const previewCells = options.previewCells ?? []
   const activeCell = options.activeCell ?? null
@@ -471,5 +474,13 @@ export function renderBoard(ctx: CanvasRenderingContext2D, options: RenderOption
     ctx.stroke()
   }
 
-  drawClues(ctx, clues, clueProgress, layout, activeCell, colors)
+  drawClues(
+    ctx,
+    clues,
+    clueProgress,
+    layout,
+    activeCell,
+    colors,
+    highlightResolvedClues,
+  )
 }

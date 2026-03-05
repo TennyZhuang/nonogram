@@ -122,6 +122,7 @@ describe('collectResolvedSegmentBoundaryCells', () => {
 
 function createMockCanvas() {
   const calls: { method: string; args: unknown[] }[] = []
+  const textCalls: { text: string; fillStyle: string }[] = []
   const ctx = {
     canvas: { width: 500, height: 500 },
     clearRect: vi.fn(),
@@ -144,7 +145,15 @@ function createMockCanvas() {
     textAlign: '',
     textBaseline: '',
   } as unknown as CanvasRenderingContext2D
-  return { ctx, calls }
+
+  ctx.fillText = vi.fn((text: string | number) => {
+    textCalls.push({
+      text: String(text),
+      fillStyle: String(ctx.fillStyle),
+    })
+  }) as unknown as CanvasRenderingContext2D['fillText']
+
+  return { ctx, calls, textCalls }
 }
 
 const testLayout: BoardLayout = {
@@ -227,5 +236,49 @@ describe('renderBoard mark-empty hint', () => {
     })
 
     expect(calls.filter((c) => c.method === 'setLineDash').length).toBe(0)
+  })
+})
+
+describe('renderBoard clue completion highlight', () => {
+  function createResolvedBoard(): Board {
+    const board = createUnknownBoard()
+    board[0][1] = 'filled'
+    board[0][2] = 'filled'
+    board[1][1] = 'filled'
+    return board
+  }
+
+  it('highlights resolved clues by default', () => {
+    const { ctx, textCalls } = createMockCanvas()
+    renderBoard(ctx, {
+      board: createResolvedBoard(),
+      solution,
+      clues,
+      layout: testLayout,
+      colors: testColors,
+    })
+
+    expect(textCalls.some((call) => call.fillStyle === testColors.clueResolved)).toBe(true)
+  })
+
+  it('keeps resolved clues in normal color when highlight is disabled', () => {
+    const { ctx, textCalls } = createMockCanvas()
+    renderBoard(ctx, {
+      board: createResolvedBoard(),
+      solution,
+      clues,
+      layout: testLayout,
+      colors: testColors,
+      highlightResolvedClues: false,
+    })
+
+    expect(textCalls.some((call) => call.fillStyle === testColors.clueText)).toBe(true)
+    expect(
+      textCalls.some(
+        (call) =>
+          call.fillStyle === testColors.clueResolved ||
+          call.fillStyle === testColors.clueResolvedActive,
+      ),
+    ).toBe(false)
   })
 })

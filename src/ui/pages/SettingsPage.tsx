@@ -11,6 +11,10 @@ export function SettingsPage({ onBack, onOpenTutorial }: SettingsPageProps) {
   const setTheme = useSettingsStore((state) => state.setTheme)
   const livesEnabled = useSettingsStore((state) => state.livesEnabled)
   const toggleLivesEnabled = useSettingsStore((state) => state.toggleLivesEnabled)
+  const highlightCompletedClues = useSettingsStore((state) => state.highlightCompletedClues)
+  const toggleHighlightCompletedClues = useSettingsStore(
+    (state) => state.toggleHighlightCompletedClues,
+  )
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-5 px-4 py-6">
@@ -78,6 +82,28 @@ export function SettingsPage({ onBack, onOpenTutorial }: SettingsPageProps) {
             onClick={toggleLivesEnabled}
           >
             {livesEnabled ? '已开启' : '已关闭'}
+          </button>
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-border bg-card p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold">线索完成高亮</h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              关闭后，已完成的线索数字会保持普通颜色。
+            </p>
+          </div>
+          <button
+            type="button"
+            className={`rounded-md px-3 py-1 text-xs font-medium ${
+              highlightCompletedClues
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground'
+            }`}
+            onClick={toggleHighlightCompletedClues}
+          >
+            {highlightCompletedClues ? '已开启' : '已关闭'}
           </button>
         </div>
       </section>
