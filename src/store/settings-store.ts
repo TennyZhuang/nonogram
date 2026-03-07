@@ -6,6 +6,7 @@ import { DEFAULT_THEME, normalizeThemeId, type ThemeId } from '@/theme/themes'
 interface SettingsStoreState {
   livesEnabled: boolean
   soundEnabled: boolean
+  highlightCompletedClues: boolean
   theme: ThemeId
   tutorialCompleted: boolean
   hasHydrated: boolean
@@ -13,6 +14,8 @@ interface SettingsStoreState {
   toggleLivesEnabled: () => void
   setSoundEnabled: (enabled: boolean) => void
   toggleSoundEnabled: () => void
+  setHighlightCompletedClues: (enabled: boolean) => void
+  toggleHighlightCompletedClues: () => void
   setTheme: (theme: ThemeId) => void
   completeTutorial: () => void
   setHasHydrated: (hasHydrated: boolean) => void
@@ -23,6 +26,7 @@ export const useSettingsStore = create<SettingsStoreState>()(
     (set) => ({
       livesEnabled: true,
       soundEnabled: false,
+      highlightCompletedClues: true,
       theme: DEFAULT_THEME,
       tutorialCompleted: false,
       hasHydrated: false,
@@ -36,23 +40,30 @@ export const useSettingsStore = create<SettingsStoreState>()(
         set((state) => ({
           soundEnabled: !state.soundEnabled,
         })),
+      setHighlightCompletedClues: (enabled) => set({ highlightCompletedClues: enabled }),
+      toggleHighlightCompletedClues: () =>
+        set((state) => ({
+          highlightCompletedClues: !state.highlightCompletedClues,
+        })),
       setTheme: (theme) => set({ theme: normalizeThemeId(theme) }),
       completeTutorial: () => set({ tutorialCompleted: true }),
       setHasHydrated: (hasHydrated) => set({ hasHydrated }),
     }),
     {
       name: 'nonogram-settings',
-      version: 4,
+      version: 5,
       migrate: (persistedState) => {
         const state = (persistedState ?? {}) as {
           livesEnabled?: boolean
           soundEnabled?: boolean
+          highlightCompletedClues?: boolean
           theme?: string
           tutorialCompleted?: boolean
         }
         return {
           livesEnabled: state.livesEnabled ?? true,
           soundEnabled: state.soundEnabled ?? false,
+          highlightCompletedClues: state.highlightCompletedClues ?? true,
           theme: normalizeThemeId(state.theme),
           tutorialCompleted: state.tutorialCompleted ?? false,
           hasHydrated: false,
@@ -64,6 +75,7 @@ export const useSettingsStore = create<SettingsStoreState>()(
       partialize: (state) => ({
         livesEnabled: state.livesEnabled,
         soundEnabled: state.soundEnabled,
+        highlightCompletedClues: state.highlightCompletedClues,
         theme: state.theme,
         tutorialCompleted: state.tutorialCompleted,
       }),

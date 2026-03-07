@@ -137,6 +137,7 @@ function collectFilledDiffAnchors(previousBoard: BoardState, nextBoard: BoardSta
 
 export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
   const theme = useSettingsStore((state) => state.theme)
+  const highlightCompletedClues = useSettingsStore((state) => state.highlightCompletedClues)
   const { play } = useSound()
   const playRef = useRef(play)
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -331,8 +332,20 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
       colors: boardColors,
       previewCells,
       activeCell,
+      highlightResolvedClues: highlightCompletedClues,
     })
-  }, [activeCell, board, boardColors, canvasSize.height, canvasSize.width, layout, mode, previewCells, puzzle])
+  }, [
+    activeCell,
+    board,
+    boardColors,
+    canvasSize.height,
+    canvasSize.width,
+    highlightCompletedClues,
+    layout,
+    mode,
+    previewCells,
+    puzzle,
+  ])
 
   const updateFromSnapshot = useCallback(
     (snapshot: InputControllerSnapshot) => {

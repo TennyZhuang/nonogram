@@ -4,6 +4,7 @@ import { calculateBoardLayout } from '@/canvas/layout'
 import { getBoardColorsFromCss, renderBoard } from '@/canvas/renderer'
 import { formatElapsed } from '@/core/timer'
 import type { Board, DifficultyTier, PuzzleDefinition } from '@/core/types'
+import { useSettingsStore } from '@/store/settings-store'
 
 export const NONOGRAM_SHARE_URL = 'https://gh.zhuangty.com/nonogram/'
 
@@ -103,6 +104,7 @@ export function renderResultBoardPreview(
   if (!ctx) {
     throw new Error('board-preview-context-unavailable')
   }
+  const highlightResolvedClues = useSettingsStore.getState().highlightCompletedClues
 
   renderBoard(ctx, {
     board,
@@ -110,6 +112,7 @@ export function renderResultBoardPreview(
     clues: puzzle.clues,
     layout,
     colors: getBoardColorsFromCss(document.documentElement),
+    highlightResolvedClues,
   })
 
   return canvas
