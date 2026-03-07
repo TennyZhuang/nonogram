@@ -1,11 +1,19 @@
 import type { PuzzleClues } from '@/core/types'
-
-type SolveCell = -1 | 0 | 1
-type SolveBoard = SolveCell[][]
-
-const UNKNOWN: SolveCell = -1
-const EMPTY: SolveCell = 0
-const FILLED: SolveCell = 1
+import { analyzeLine } from '@/engine/line-analysis'
+import {
+  EMPTY,
+  FILLED,
+  UNKNOWN,
+  applyCell,
+  cloneBoard,
+  createUnknownBoard,
+  isSolved,
+  readLine,
+  sumClue,
+  toBooleanBoard,
+  type SolveBoard,
+  type SolveCell,
+} from '@/engine/solve-model'
 
 export interface SolverTrace {
   phase1CellsSolved: number
@@ -43,129 +51,14 @@ interface CandidateCell {
   row: number
   col: number
   options: SolveCell[]
+  ambiguity: number
 }
 
-const patternCache = new Map<string, number[][]>()
 const MAX_GUARANTEED_LIVES = 3
 
-function normalizeClue(clue: number[]): number[] {
-  if (clue.length === 1 && clue[0] === 0) {
-    return []
-  }
-  return clue
-}
-
-function sumClue(clue: number[]): number {
-  return normalizeClue(clue).reduce((sum, run) => sum + run, 0)
-}
-
-function createUnknownBoard(size: number): SolveBoard {
-  return Array.from({ length: size }, () =>
-    Array.from({ length: size }, () => UNKNOWN as SolveCell),
-  )
-}
-
-function cloneBoard(board: SolveBoard): SolveBoard {
-  return board.map((row) => [...row] as SolveCell[])
-}
-
-function isSolved(board: SolveBoard): boolean {
-  return board.every((row) => row.every((cell) => cell !== UNKNOWN))
-}
-
-function toBooleanBoard(board: SolveBoard): boolean[][] {
-  return board.map((row) => row.map((cell) => cell === FILLED))
-}
-
-function readLine(board: SolveBoard, axis: 'row' | 'col', index: number): SolveCell[] {
-  if (axis === 'row') {
-    return board[index]
-  }
-  return board.map((row) => row[index]) as SolveCell[]
-}
-
-function applyCell(
-  board: SolveBoard,
-  row: number,
-  col: number,
-  value: SolveCell,
-): { changed: boolean; contradiction: boolean } {
-  const current = board[row][col]
-  if (current === UNKNOWN) {
-    board[row][col] = value
-    return { changed: true, contradiction: false }
-  }
-  if (current !== value) {
-    return { changed: false, contradiction: true }
-  }
-  return { changed: false, contradiction: false }
-}
-
-function generatePatterns(length: number, clue: number[]): number[][] {
-  const normalized = normalizeClue(clue)
-  const cacheKey = `${length}|${normalized.join(',')}`
-  const cached = patternCache.get(cacheKey)
-  if (cached) {
-    return cached
-  }
-
-  if (normalized.length === 0) {
-    const pattern = [Array.from({ length }, () => EMPTY)]
-    patternCache.set(cacheKey, pattern)
-    return pattern
-  }
-
-  const results: number[][] = []
-
-  const recurse = (runIndex: number, cursor: number, line: number[]): void => {
-    if (runIndex === normalized.length) {
-      const nextLine = [...line]
-      for (let i = cursor; i < length; i += 1) {
-        nextLine[i] = EMPTY
-      }
-      results.push(nextLine)
-      return
-    }
-
-    const runLength = normalized[runIndex]
-    const remainingRuns = normalized.slice(runIndex + 1)
-    const minRemainingLength =
-      remainingRuns.reduce((sum, value) => sum + value, 0) + remainingRuns.length
-    const maxStart = length - runLength - minRemainingLength
-
-    for (let start = cursor; start <= maxStart; start += 1) {
-      const nextLine = [...line]
-      for (let i = cursor; i < start; i += 1) {
-        nextLine[i] = EMPTY
-      }
-      for (let i = start; i < start + runLength; i += 1) {
-        nextLine[i] = FILLED
-      }
-
-      let nextCursor = start + runLength
-      if (runIndex < normalized.length - 1) {
-        nextLine[nextCursor] = EMPTY
-        nextCursor += 1
-      }
-      recurse(runIndex + 1, nextCursor, nextLine)
-    }
-  }
-
-  recurse(0, 0, [])
-  patternCache.set(cacheKey, results)
-  return results
-}
-
-function getValidPatterns(line: SolveCell[], clue: number[]): number[][] {
-  const basePatterns = generatePatterns(line.length, clue)
-  return basePatterns.filter((pattern) =>
-    pattern.every((value, index) => line[index] === UNKNOWN || line[index] === value),
-  )
-}
-
-function runCountingRule(line: SolveCell[], clue: number[]): number[] | null {
-  const validPatterns = getValidPatterns(line, clue)
-  if (validPatterns.length === 0) {
+function runCountingRule(line: SolveCell[], clue: number[]): SolveCell[] | null {
+  const analysis = analyzeLine(line, clue)
+  if (!analysis.satisfiable) {
     return null
   }
 
@@ -176,7 +69,7 @@ function runCountingRule(line: SolveCell[], clue: number[]): number[] | null {
     .map((cell, index) => ({ cell, index }))
     .filter(({ cell }) => cell === UNKNOWN)
     .map(({ index }) => index)
-  const updates: number[] = Array.from({ length: line.length }, () => UNKNOWN)
+  const updates: SolveCell[] = Array.from({ length: line.length }, () => UNKNOWN)
 
   if (unknownIndexes.length === 0) {
     return updates
@@ -188,29 +81,29 @@ function runCountingRule(line: SolveCell[], clue: number[]): number[] | null {
     }
     return updates
   }
+
   if (emptyCount === line.length - totalFilled) {
     for (const index of unknownIndexes) {
       updates[index] = FILLED
     }
-    return updates
   }
+
   return updates
 }
 
-function runOverlapRule(line: SolveCell[], clue: number[]): number[] | null {
-  const validPatterns = getValidPatterns(line, clue)
-  if (validPatterns.length === 0) {
+function runOverlapRule(line: SolveCell[], clue: number[]): SolveCell[] | null {
+  const analysis = analyzeLine(line, clue)
+  if (!analysis.satisfiable) {
     return null
   }
 
-  const updates: number[] = Array.from({ length: line.length }, () => UNKNOWN)
+  const updates: SolveCell[] = Array.from({ length: line.length }, () => UNKNOWN)
   for (let index = 0; index < line.length; index += 1) {
     if (line[index] !== UNKNOWN) {
       continue
     }
-    const values = new Set(validPatterns.map((pattern) => pattern[index]))
-    if (values.size === 1) {
-      updates[index] = validPatterns[0][index] as SolveCell
+    if (analysis.forced[index] !== UNKNOWN) {
+      updates[index] = analysis.forced[index]
     }
   }
 
@@ -234,7 +127,7 @@ function applyLineRule(
 
   let changedCells = 0
   for (let lineIndex = 0; lineIndex < line.length; lineIndex += 1) {
-    const value = updateValues[lineIndex] as SolveCell
+    const value = updateValues[lineIndex]
     if (value === UNKNOWN) {
       continue
     }
@@ -333,37 +226,44 @@ function findMostConstrainedCell(
   clues: PuzzleClues,
 ): CandidateCell | null {
   const size = board.length
+  const rowAnalyses = clues.rows.map((clue, row) =>
+    analyzeLine(readLine(board, 'row', row), clue),
+  )
+  const colAnalyses = clues.cols.map((clue, col) =>
+    analyzeLine(readLine(board, 'col', col), clue),
+  )
+
+  if (rowAnalyses.some((analysis) => !analysis.satisfiable)) {
+    return null
+  }
+  if (colAnalyses.some((analysis) => !analysis.satisfiable)) {
+    return null
+  }
+
   let candidate: CandidateCell | null = null
 
   for (let row = 0; row < size; row += 1) {
-    const rowPatterns = getValidPatterns(readLine(board, 'row', row), clues.rows[row])
-    if (rowPatterns.length === 0) {
-      return null
-    }
-
     for (let col = 0; col < size; col += 1) {
       if (board[row][col] !== UNKNOWN) {
         continue
       }
 
-      const colPatterns = getValidPatterns(readLine(board, 'col', col), clues.cols[col])
-      if (colPatterns.length === 0) {
-        return null
-      }
-
-      const rowOptions = Array.from(new Set(rowPatterns.map((pattern) => pattern[col])))
-      const colOptions = Array.from(new Set(colPatterns.map((pattern) => pattern[row])))
       const options = intersectOptions(
-        rowOptions as SolveCell[],
-        colOptions as SolveCell[],
+        rowAnalyses[row].optionsAt[col],
+        colAnalyses[col].optionsAt[row],
       )
 
       if (options.length === 0) {
         return null
       }
 
-      if (!candidate || options.length < candidate.options.length) {
-        candidate = { row, col, options }
+      const ambiguity = rowAnalyses[row].freedomCount + colAnalyses[col].freedomCount
+      if (
+        !candidate ||
+        options.length < candidate.options.length ||
+        (options.length === candidate.options.length && ambiguity < candidate.ambiguity)
+      ) {
+        candidate = { row, col, options, ambiguity }
         if (options.length === 1) {
           return candidate
         }
