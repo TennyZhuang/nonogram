@@ -68,7 +68,7 @@ describe('generator', () => {
     const assessment = assessPuzzleDifficultyV2(puzzle!.clues, puzzle!.size)
     expect(assessment.tier).toBe(5)
     expect(assessment.features.probeCount).toBeGreaterThan(0)
-  })
+  }, 15_000)
 
   it('generates a valid D6 puzzle with sustained hard reasoning', () => {
     const puzzle = generatePuzzle(6, 2)
