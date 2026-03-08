@@ -1,6 +1,8 @@
 import type { DifficultyTier } from '@/core/types'
 import type { SolverTrace } from '@/engine/solver'
 
+export { assessPuzzleDifficultyV2, scoreDifficultyV2 } from '@/engine/difficulty-v2'
+
 export function scoreDifficulty(
   trace: SolverTrace,
   size: number,

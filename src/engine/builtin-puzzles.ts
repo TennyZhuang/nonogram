@@ -1,19 +1,32 @@
 import type { DifficultyTier, PuzzleDefinition } from '@/core/types'
 import { extractClues } from '@/engine/clue-extractor'
-import { BUILTIN_PUZZLES_RAW } from '@/engine/builtin-puzzles.data'
+import { BUILTIN_PUZZLES_RAW } from '@/engine/builtin-puzzles.pool'
 
 const TIERS: DifficultyTier[] = [1, 2, 3, 4, 5, 6]
-const EXPECTED_PUZZLES_PER_TIER = 10
+const EXPECTED_PUZZLES_PER_TIER: Record<DifficultyTier, number> = {
+  1: 10,
+  2: 10,
+  3: 10,
+  4: 10,
+  5: 10,
+  6: 50,
+}
 
 type BuiltinPuzzlePool = Record<DifficultyTier, PuzzleDefinition[]>
 
-const fallbackCursorByTier: Record<DifficultyTier, number> = {
-  1: 0,
-  2: 0,
-  3: 0,
-  4: 0,
-  5: 0,
-  6: 0,
+interface BuiltinFallbackState {
+  cursor: number
+  lastIndex: number | null
+  order: number[]
+}
+
+const fallbackStateByTier: Record<DifficultyTier, BuiltinFallbackState> = {
+  1: { cursor: 0, lastIndex: null, order: [] },
+  2: { cursor: 0, lastIndex: null, order: [] },
+  3: { cursor: 0, lastIndex: null, order: [] },
+  4: { cursor: 0, lastIndex: null, order: [] },
+  5: { cursor: 0, lastIndex: null, order: [] },
+  6: { cursor: 0, lastIndex: null, order: [] },
 }
 
 function createEmptyPool(): BuiltinPuzzlePool {
@@ -89,9 +102,9 @@ function buildBuiltinPool(): BuiltinPuzzlePool {
 
   for (const tier of TIERS) {
     const rawItems = BUILTIN_PUZZLES_RAW[tier]
-    if (rawItems.length !== EXPECTED_PUZZLES_PER_TIER) {
+    if (rawItems.length !== EXPECTED_PUZZLES_PER_TIER[tier]) {
       throw new Error(
-        `Builtin puzzle count mismatch for tier ${tier}: expected ${EXPECTED_PUZZLES_PER_TIER}, got ${rawItems.length}`,
+        `Builtin puzzle count mismatch for tier ${tier}: expected ${EXPECTED_PUZZLES_PER_TIER[tier]}, got ${rawItems.length}`,
       )
     }
 
@@ -112,16 +125,52 @@ function buildBuiltinPool(): BuiltinPuzzlePool {
 
 const builtinPoolByTier = buildBuiltinPool()
 
+function createShuffledIndexes(length: number): number[] {
+  const indexes = Array.from({ length }, (_, index) => index)
+  for (let index = indexes.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1))
+    ;[indexes[index], indexes[swapIndex]] = [indexes[swapIndex], indexes[index]]
+  }
+  return indexes
+}
+
+function refillFallbackOrder(tier: DifficultyTier): void {
+  const pool = builtinPoolByTier[tier]
+  const state = fallbackStateByTier[tier]
+  const order = createShuffledIndexes(pool.length)
+
+  if (
+    state.lastIndex !== null &&
+    order.length > 1 &&
+    order[0] === state.lastIndex
+  ) {
+    ;[order[0], order[1]] = [order[1], order[0]]
+  }
+
+  state.order = order
+  state.cursor = 0
+}
+
 export function getBuiltinFallbackPuzzleByTier(tier: DifficultyTier): PuzzleDefinition {
   const pool = builtinPoolByTier[tier]
-  const cursor = fallbackCursorByTier[tier]
-  const nextPuzzle = pool[cursor % pool.length]
-  fallbackCursorByTier[tier] = cursor + 1
+  const state = fallbackStateByTier[tier]
+  if (state.order.length === 0 || state.cursor >= state.order.length) {
+    refillFallbackOrder(tier)
+  }
+
+  const nextIndex = state.order[state.cursor]
+  state.cursor += 1
+  state.lastIndex = nextIndex
+  const nextPuzzle = pool[nextIndex]
   return clonePuzzle(nextPuzzle)
 }
 
 export function resetBuiltinFallbackCursorForTests(): void {
   for (const tier of TIERS) {
-    fallbackCursorByTier[tier] = 0
+    fallbackStateByTier[tier] = {
+      cursor: 0,
+      lastIndex: null,
+      order: [],
+    }
   }
 }
