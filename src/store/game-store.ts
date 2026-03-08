@@ -77,6 +77,16 @@ function appendPuzzleToPool(
   return [...deduped, puzzle].slice(-maxSize)
 }
 
+function takeRandomPuzzle(
+  pool: PuzzleDefinition[],
+): { puzzle: PuzzleDefinition; remaining: PuzzleDefinition[] } {
+  const index = Math.floor(Math.random() * pool.length)
+  return {
+    puzzle: pool[index],
+    remaining: pool.filter((_, currentIndex) => currentIndex !== index),
+  }
+}
+
 const createInitialState = () => ({
   currentPuzzle: null,
   game: null,
@@ -105,14 +115,14 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
   startGameByTier(tier) {
     const currentPool = get().puzzlePool[tier]
     if (currentPool.length > 0) {
+      const { puzzle: nextPuzzle, remaining } = takeRandomPuzzle(currentPool)
       foregroundGenerationRequest += 1
-      const nextPuzzle = currentPool[0]
       set((state) => ({
         isGeneratingPuzzle: false,
         generatingTier: null,
         puzzlePool: {
           ...state.puzzlePool,
-          [tier]: state.puzzlePool[tier].slice(1),
+          [tier]: remaining,
         },
       }))
       get().startGame(nextPuzzle)
