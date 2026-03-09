@@ -114,6 +114,30 @@ describe('persistence integration', () => {
     expect(pool[1][0].id).toBe(puzzle5x5.id)
   })
 
+  it('does not restore cleared sessions as active games', async () => {
+    const store = useGameStore.getState()
+    store.startGame(puzzle5x5)
+
+    for (let row = 0; row < puzzle5x5.size; row += 1) {
+      for (let col = 0; col < puzzle5x5.size; col += 1) {
+        store.act({
+          row,
+          col,
+          type: puzzle5x5.solution[row][col] ? 'fill' : 'mark-empty',
+        })
+      }
+    }
+
+    expect(useGameStore.getState().game?.status).toBe('cleared')
+
+    await persistNow()
+    resetGameStoreForTests()
+    await hydrateFromStorage()
+
+    expect(useGameStore.getState().game).toBeNull()
+    expect(useGameStore.getState().currentPuzzle).toBeNull()
+  })
+
   it('remains playable even when persistence write fails', async () => {
     const originalPut = db.activeSession.put.bind(db.activeSession)
     db.activeSession.put = vi

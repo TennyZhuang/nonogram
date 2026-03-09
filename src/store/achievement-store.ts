@@ -1,9 +1,10 @@
 import { create } from 'zustand'
 
-interface AchievementItem {
+export interface AchievementItem {
   id: string
   name: string
   description: string
+  reward?: string
   unlocked: boolean
 }
 
@@ -19,12 +20,44 @@ interface AchievementStoreState {
 }
 
 const defaultAchievements: AchievementItem[] = [
-  { id: 'first-clear', name: '初次通关', description: '完成任意一局', unlocked: false },
-  { id: 'no-mistake', name: '零失误通关', description: '无失误完成一局', unlocked: false },
-  { id: 'first-d5', name: '征服 D5', description: '首次通关 D5', unlocked: false },
-  { id: 'first-d6', name: '征服 D6', description: '首次通关 D6', unlocked: false },
-  { id: 'streak-3', name: '连胜 3 局', description: '连续通关 3 局', unlocked: false },
+  {
+    id: 'first-clear',
+    name: '初次通关',
+    description: '完成任意一局',
+    reward: '奖励主题：竹青',
+    unlocked: false,
+  },
+  {
+    id: 'no-mistake',
+    name: '零失误通关',
+    description: '无失误完成一局',
+    unlocked: false,
+  },
+  {
+    id: 'first-d5',
+    name: '征服 D5',
+    description: '首次通关 D5',
+    reward: '奖励主题：赤金',
+    unlocked: false,
+  },
+  {
+    id: 'first-d6',
+    name: '征服 D6',
+    description: '首次通关 D6',
+    reward: '奖励主题：夜梅',
+    unlocked: false,
+  },
+  {
+    id: 'streak-3',
+    name: '连胜 3 局',
+    description: '连续通关 3 局',
+    unlocked: false,
+  },
 ]
+
+export function countUnlockedAchievements(achievements: AchievementItem[]): number {
+  return achievements.filter((item) => item.unlocked).length
+}
 
 export const useAchievementStore = create<AchievementStoreState>((set, get) => ({
   achievements: defaultAchievements,

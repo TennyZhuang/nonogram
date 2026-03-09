@@ -10,7 +10,7 @@ test('刷新后可继续上次会话', async ({ page }) => {
   await page.waitForTimeout(1200)
   await page.reload()
 
-  const continueButton = page.getByRole('button', { name: '继续游戏' })
+  const continueButton = page.getByRole('button', { name: /继续上次进度/ })
   await expect(continueButton).toBeVisible()
   await continueButton.click()
   await expect(page.getByTestId('game-board-canvas')).toBeVisible()

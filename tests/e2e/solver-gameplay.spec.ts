@@ -88,10 +88,34 @@ test('用求解器完整打通一盘 D1 游戏', async ({ page }) => {
     },
   )
 
-  // Click each cell that should be filled according to the solution
+  // Solve every cell explicitly so the result does not depend on auto-completion.
   for (let row = 0; row < puzzleData.size; row++) {
     for (let col = 0; col < puzzleData.size; col++) {
-      if (puzzleData.solution[row][col]) {
+      if (!puzzleData.solution[row][col]) {
+        continue
+      }
+
+      const clickX = box.x + layout.gridOriginX + col * layout.cellSize + layout.cellSize / 2
+      const clickY = box.y + layout.gridOriginY + row * layout.cellSize + layout.cellSize / 2
+      await page.mouse.click(clickX, clickY)
+    }
+  }
+
+  const statusAfterFill = await page.evaluate(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const store = (window as any).__gameStore
+    return store?.getState?.().game?.status as string | undefined
+  })
+
+  if (statusAfterFill !== 'cleared') {
+    await page.getByRole('button', { name: '标空' }).click()
+
+    for (let row = 0; row < puzzleData.size; row++) {
+      for (let col = 0; col < puzzleData.size; col++) {
+        if (puzzleData.solution[row][col]) {
+          continue
+        }
+
         const clickX = box.x + layout.gridOriginX + col * layout.cellSize + layout.cellSize / 2
         const clickY = box.y + layout.gridOriginY + row * layout.cellSize + layout.cellSize / 2
         await page.mouse.click(clickX, clickY)
