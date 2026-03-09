@@ -12,12 +12,12 @@ export function AchievementsPage({ onBack, onStartTier }: AchievementsPageProps)
   const progressPercent = Math.round((unlockedCount / Math.max(achievements.length, 1)) * 100)
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 py-6">
+    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 pt-6 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
       <header className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-bold">成就</h1>
         <button
           type="button"
-          className="rounded-md border border-border px-3 py-1 text-sm"
+          className="min-h-11 rounded-lg border border-border px-4 py-2 text-sm font-medium"
           onClick={onBack}
         >
           返回
@@ -72,7 +72,7 @@ export function AchievementsPage({ onBack, onStartTier }: AchievementsPageProps)
 
       <button
         type="button"
-        className="mt-auto rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground"
+        className="mt-auto min-h-11 rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground"
         onClick={() => onStartTier(1)}
       >
         开始一局

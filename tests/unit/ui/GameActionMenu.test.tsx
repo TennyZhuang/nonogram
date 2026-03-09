@@ -4,13 +4,41 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { GameActionMenu } from '@/ui/components/GameActionMenu'
 
 describe('GameActionMenu', () => {
-  it('calls callbacks from menu actions', () => {
+  it('keeps the menu open and updates sound feedback after toggling', () => {
+    function StatefulMenu() {
+      const [soundEnabled, setSoundEnabled] = React.useState(true)
+
+      return (
+        <GameActionMenu
+          soundEnabled={soundEnabled}
+          onToggleSound={() => setSoundEnabled((previous) => !previous)}
+          onRestart={() => undefined}
+          onSwitchPuzzle={() => undefined}
+          onBack={() => undefined}
+        />
+      )
+    }
+
+    render(<StatefulMenu />)
+
+    fireEvent.click(screen.getByRole('button', { name: '菜单' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: '关闭音效' }))
+
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: '开启音效' })).toBeInTheDocument()
+    expect(screen.getByText('音效已关闭')).toBeInTheDocument()
+  })
+
+  it('calls closing actions from menu items', () => {
+    const onToggleSound = vi.fn()
     const onRestart = vi.fn()
     const onSwitchPuzzle = vi.fn()
     const onBack = vi.fn()
 
     render(
       <GameActionMenu
+        soundEnabled
+        onToggleSound={onToggleSound}
         onRestart={onRestart}
         onSwitchPuzzle={onSwitchPuzzle}
         onBack={onBack}
@@ -29,11 +57,30 @@ describe('GameActionMenu', () => {
     fireEvent.click(screen.getByRole('button', { name: '菜单' }))
     fireEvent.click(screen.getByRole('menuitem', { name: '返回首页' }))
     expect(onBack).toHaveBeenCalledTimes(1)
+    expect(onToggleSound).not.toHaveBeenCalled()
+  })
+
+  it('shows sound enable action when sound is off', () => {
+    render(
+      <GameActionMenu
+        soundEnabled={false}
+        onToggleSound={() => undefined}
+        onRestart={() => undefined}
+        onSwitchPuzzle={() => undefined}
+        onBack={() => undefined}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: '菜单' }))
+    expect(screen.getByRole('menuitem', { name: '开启音效' })).toBeInTheDocument()
+    expect(screen.getByText('音效已关闭')).toBeInTheDocument()
   })
 
   it('closes menu when clicking outside', () => {
     render(
       <GameActionMenu
+        soundEnabled
+        onToggleSound={() => undefined}
         onRestart={() => undefined}
         onSwitchPuzzle={() => undefined}
         onBack={() => undefined}

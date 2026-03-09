@@ -49,21 +49,21 @@ export function GameOverDialog({
         <div className="mt-4 grid gap-2">
           <button
             type="button"
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+            className="min-h-11 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
             onClick={onRestart}
           >
             重新开始
           </button>
           <button
             type="button"
-            className="rounded-md bg-muted px-4 py-2 text-sm font-medium"
+            className="min-h-11 rounded-lg bg-muted px-4 py-2 text-sm font-medium"
             onClick={onSwitchPuzzle}
           >
             换一题
           </button>
           <button
             type="button"
-            className="rounded-md border border-border px-4 py-2 text-sm font-medium"
+            className="min-h-11 rounded-lg border border-border px-4 py-2 text-sm font-medium"
             onClick={onBack}
           >
             返回首页

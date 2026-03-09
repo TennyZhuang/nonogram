@@ -147,7 +147,7 @@ export function OnboardingPage({ onFinish, onSkip }: OnboardingPageProps) {
   const step = steps[stepIndex]
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-4 px-4 py-6">
+    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-4 px-4 pt-6 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold">新手引导</h1>
@@ -157,7 +157,7 @@ export function OnboardingPage({ onFinish, onSkip }: OnboardingPageProps) {
         </div>
         <button
           type="button"
-          className="rounded-md border border-border px-3 py-1 text-sm"
+          className="min-h-11 rounded-lg border border-border px-4 py-2 text-sm font-medium"
           onClick={onSkip}
         >
           跳过引导
@@ -190,7 +190,7 @@ export function OnboardingPage({ onFinish, onSkip }: OnboardingPageProps) {
       <footer className="mt-auto grid grid-cols-2 gap-3">
         <button
           type="button"
-          className="rounded-lg border border-border px-4 py-3 text-sm font-medium disabled:opacity-40"
+          className="min-h-11 rounded-lg border border-border px-4 py-3 text-sm font-medium disabled:opacity-40"
           onClick={() => setStepIndex((index) => Math.max(0, index - 1))}
           disabled={stepIndex === 0}
         >
@@ -198,7 +198,7 @@ export function OnboardingPage({ onFinish, onSkip }: OnboardingPageProps) {
         </button>
         <button
           type="button"
-          className="rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground"
+          className="min-h-11 rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground"
           onClick={() => {
             if (isLast) {
               onFinish()
