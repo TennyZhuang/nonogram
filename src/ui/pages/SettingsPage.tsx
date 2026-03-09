@@ -1,4 +1,4 @@
-import { Lock } from 'lucide-react'
+import { Lock, Volume2 } from 'lucide-react'
 
 import { useAchievementStore } from '@/store/achievement-store'
 import { useSettingsStore } from '@/store/settings-store'
@@ -17,6 +17,8 @@ export function SettingsPage({ onBack, onOpenTutorial }: SettingsPageProps) {
   const achievements = useAchievementStore((state) => state.achievements)
   const theme = useSettingsStore((state) => state.theme)
   const setTheme = useSettingsStore((state) => state.setTheme)
+  const soundEnabled = useSettingsStore((state) => state.soundEnabled)
+  const toggleSoundEnabled = useSettingsStore((state) => state.toggleSoundEnabled)
   const livesEnabled = useSettingsStore((state) => state.livesEnabled)
   const toggleLivesEnabled = useSettingsStore((state) => state.toggleLivesEnabled)
   const highlightCompletedClues = useSettingsStore((state) => state.highlightCompletedClues)
@@ -29,12 +31,12 @@ export function SettingsPage({ onBack, onOpenTutorial }: SettingsPageProps) {
   )
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-5 px-4 py-6">
+    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-5 px-4 pt-6 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
       <header className="flex items-center justify-between">
         <h1 className="text-xl font-bold">设置</h1>
         <button
           type="button"
-          className="rounded-md border border-border px-3 py-1 text-sm"
+          className="min-h-11 rounded-lg border border-border px-4 py-2 text-sm font-medium"
           onClick={onBack}
         >
           返回
@@ -97,14 +99,35 @@ export function SettingsPage({ onBack, onOpenTutorial }: SettingsPageProps) {
       </section>
 
       <section className="rounded-xl border border-border bg-card p-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Volume2 className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-semibold">音效</h2>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">移动端改为收纳到菜单与设置中，避免遮挡底部操作。</p>
+          </div>
+          <button
+            type="button"
+            className={`min-h-11 rounded-lg px-3 py-2 text-xs font-medium ${
+              soundEnabled ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+            }`}
+            onClick={toggleSoundEnabled}
+          >
+            {soundEnabled ? '已开启' : '已关闭'}
+          </button>
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-border bg-card p-4">
+        <div className="flex items-center justify-between gap-4">
           <div>
             <h2 className="text-sm font-semibold">生命值模式</h2>
             <p className="mt-1 text-xs text-muted-foreground">开启后，错误操作会消耗生命值。</p>
           </div>
           <button
             type="button"
-            className={`rounded-md px-3 py-1 text-xs font-medium ${
+            className={`min-h-11 rounded-lg px-3 py-2 text-xs font-medium ${
               livesEnabled ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
             }`}
             onClick={toggleLivesEnabled}
@@ -115,7 +138,7 @@ export function SettingsPage({ onBack, onOpenTutorial }: SettingsPageProps) {
       </section>
 
       <section className="rounded-xl border border-border bg-card p-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <div>
             <h2 className="text-sm font-semibold">线索完成高亮</h2>
             <p className="mt-1 text-xs text-muted-foreground">
@@ -124,7 +147,7 @@ export function SettingsPage({ onBack, onOpenTutorial }: SettingsPageProps) {
           </div>
           <button
             type="button"
-            className={`rounded-md px-3 py-1 text-xs font-medium ${
+            className={`min-h-11 rounded-lg px-3 py-2 text-xs font-medium ${
               highlightCompletedClues
                 ? 'bg-primary text-primary-foreground'
                 : 'bg-muted text-muted-foreground'
@@ -143,7 +166,7 @@ export function SettingsPage({ onBack, onOpenTutorial }: SettingsPageProps) {
         </p>
         <button
           type="button"
-          className="mt-3 w-full rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted"
+          className="mt-3 min-h-11 w-full rounded-lg border border-border px-4 py-3 text-sm font-medium hover:bg-muted"
           onClick={onOpenTutorial}
         >
           重新学习引导

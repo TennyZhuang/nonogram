@@ -5,6 +5,7 @@ import { LoaderCircle, Sparkles } from 'lucide-react'
 import type { DifficultyTier } from '@/core/types'
 import { useAchievementStore } from '@/store/achievement-store'
 import { useGameStore } from '@/store/game-store'
+import { useSettingsStore } from '@/store/settings-store'
 import { AchievementToast } from '@/ui/components/AchievementToast'
 import { Board } from '@/ui/components/Board'
 import { GameActionMenu } from '@/ui/components/GameActionMenu'
@@ -72,6 +73,8 @@ export function GamePage({ onBackHome }: GamePageProps) {
   const syncElapsed = useGameStore((state) => state.syncElapsed)
   const clearGame = useGameStore((state) => state.clearGame)
 
+  const soundEnabled = useSettingsStore((state) => state.soundEnabled)
+  const toggleSoundEnabled = useSettingsStore((state) => state.toggleSoundEnabled)
   const lastUnlocked = useAchievementStore((state) => state.lastUnlocked)
   const clearToast = useAchievementStore((state) => state.clearToast)
   const modeLabel = mode === 'fill' ? '填充' : '标空'
@@ -103,7 +106,7 @@ export function GamePage({ onBackHome }: GamePageProps) {
     const tierLabel = generatingTier ? `D${generatingTier}` : '挑战题'
 
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-md flex-col items-center justify-center px-4 py-6">
+      <main className="mx-auto flex min-h-screen w-full max-w-md flex-col items-center justify-center px-4 pt-6 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
         <section className="w-full rounded-3xl border border-primary/15 bg-card p-6 text-center shadow-sm">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
             <LoaderCircle className="h-7 w-7 animate-spin" />
@@ -139,7 +142,7 @@ export function GamePage({ onBackHome }: GamePageProps) {
 
           <button
             type="button"
-            className="mt-5 rounded-md border border-border px-4 py-2 text-sm"
+            className="mt-5 min-h-11 rounded-lg border border-border px-4 py-2 text-sm font-medium"
             onClick={onBackHome}
           >
             返回首页
@@ -151,12 +154,12 @@ export function GamePage({ onBackHome }: GamePageProps) {
 
   if (!puzzle || !game) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 py-6">
+      <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 pt-6 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
         <h1 className="text-xl font-bold">未找到游戏</h1>
         <p className="mt-2 text-sm text-muted-foreground">请先从首页选择难度开始游戏。</p>
         <button
           type="button"
-          className="mt-4 rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground"
+          className="mt-4 min-h-11 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
           onClick={onBackHome}
         >
           返回首页
@@ -171,9 +174,11 @@ export function GamePage({ onBackHome }: GamePageProps) {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-3 px-3 py-3 lg:max-w-6xl">
+    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-3 px-3 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] lg:max-w-6xl">
       <header className="flex items-center justify-between">
         <GameActionMenu
+          soundEnabled={soundEnabled}
+          onToggleSound={toggleSoundEnabled}
           onRestart={restart}
           onSwitchPuzzle={() => switchPuzzle()}
           onBack={onBackHome}
@@ -200,7 +205,7 @@ export function GamePage({ onBackHome }: GamePageProps) {
         </aside>
       </div>
 
-      <footer className="mt-auto pb-2 lg:hidden">
+      <footer className="mt-auto pb-[calc(env(safe-area-inset-bottom)+0.5rem)] lg:hidden">
         <div className="mb-2 text-center text-xs text-muted-foreground">{modeStatus}</div>
         <ModeSwitch mode={mode} onChange={setMode} />
       </footer>

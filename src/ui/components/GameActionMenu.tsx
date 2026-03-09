@@ -1,12 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 
 interface GameActionMenuProps {
+  soundEnabled: boolean
+  onToggleSound: () => void
   onRestart: () => void
   onSwitchPuzzle: () => void
   onBack: () => void
 }
 
 export function GameActionMenu({
+  soundEnabled,
+  onToggleSound,
   onRestart,
   onSwitchPuzzle,
   onBack,
@@ -50,7 +54,7 @@ export function GameActionMenu({
     <div ref={containerRef} className="relative">
       <button
         type="button"
-        className="rounded-md border border-border px-3 py-1 text-xs"
+        className="min-h-11 min-w-11 rounded-lg border border-border px-4 py-2 text-sm font-medium"
         aria-expanded={open}
         aria-haspopup="menu"
         onClick={() => setOpen((prev) => !prev)}
@@ -61,12 +65,20 @@ export function GameActionMenu({
       {open ? (
         <div
           role="menu"
-          className="absolute left-0 top-full z-30 mt-2 w-36 rounded-lg border border-border bg-card p-1 shadow-lg"
+          className="absolute left-0 top-full z-30 mt-2 w-40 rounded-xl border border-border bg-card p-1 shadow-lg"
         >
           <button
             type="button"
             role="menuitem"
-            className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-muted"
+            className="min-h-11 w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-muted"
+            onClick={() => handleAction(onToggleSound)}
+          >
+            {soundEnabled ? '关闭音效' : '开启音效'}
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className="mt-1 min-h-11 w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-muted"
             onClick={() => handleAction(onRestart)}
           >
             重新开始
@@ -74,7 +86,7 @@ export function GameActionMenu({
           <button
             type="button"
             role="menuitem"
-            className="mt-1 w-full rounded-md px-3 py-2 text-left text-sm hover:bg-muted"
+            className="mt-1 min-h-11 w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-muted"
             onClick={() => handleAction(onSwitchPuzzle)}
           >
             换一局
@@ -82,7 +94,7 @@ export function GameActionMenu({
           <button
             type="button"
             role="menuitem"
-            className="mt-1 w-full rounded-md px-3 py-2 text-left text-sm hover:bg-muted"
+            className="mt-1 min-h-11 w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-muted"
             onClick={() => handleAction(onBack)}
           >
             返回首页

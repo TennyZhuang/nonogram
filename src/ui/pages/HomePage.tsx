@@ -55,7 +55,7 @@ export function HomePage({
   )
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 py-6">
+    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 pt-6 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
       <header className="mb-5 text-center">
         <img src={logoUrl} alt="数织 logo" className="mx-auto mb-3 h-20 w-20 rounded-2xl border border-border" />
         <h1 className="text-3xl font-bold">数织</h1>
@@ -80,7 +80,7 @@ export function HomePage({
           <button
             type="button"
             aria-label={`推荐挑战：${recommendedChallenge.title}`}
-            className="rounded-xl bg-primary px-4 py-3 text-primary-foreground"
+            className="min-h-11 rounded-xl bg-primary px-4 py-3 text-primary-foreground"
             onClick={() => onSelectDifficulty(recommendedChallenge.tier)}
           >
             <div className="flex items-center gap-2 text-xs opacity-90">
@@ -95,7 +95,7 @@ export function HomePage({
 
           <button
             type="button"
-            className="rounded-xl border border-border bg-background px-4 py-3"
+            className="min-h-11 rounded-xl border border-border bg-background px-4 py-3"
             onClick={onOpenAchievements}
           >
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -154,7 +154,7 @@ export function HomePage({
       {canInstall ? (
         <button
           type="button"
-          className="mb-4 rounded-lg border border-border px-4 py-3 text-sm font-medium"
+          className="mb-4 min-h-11 rounded-lg border border-border px-4 py-3 text-sm font-medium"
           onClick={onInstall}
         >
           安装到主屏幕
@@ -177,14 +177,14 @@ export function HomePage({
       <div className="mt-auto grid grid-cols-2 gap-3">
         <button
           type="button"
-          className="rounded-lg border border-border px-4 py-3 text-sm font-medium"
+          className="min-h-11 rounded-lg border border-border px-4 py-3 text-sm font-medium"
           onClick={onOpenAchievements}
         >
           查看成就
         </button>
         <button
           type="button"
-          className="rounded-lg border border-border px-4 py-3 text-sm font-medium"
+          className="min-h-11 rounded-lg border border-border px-4 py-3 text-sm font-medium"
           onClick={onOpenSettings}
         >
           设置
