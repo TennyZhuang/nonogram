@@ -170,6 +170,13 @@ export function GamePage({ onBackHome }: GamePageProps) {
     onBackHome()
   }
 
+  const precisionHint =
+    puzzle.size >= 15
+      ? puzzle.tier >= 5
+        ? '高难度 15×15 建议拖动批量操作，按住棋盘会显示放大定位。'
+        : '15×15 建议多用拖动批量操作，按住时会显示放大定位。'
+      : null
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-3 px-3 py-3 lg:max-w-6xl">
       <header className="flex items-center justify-between">
@@ -192,15 +199,25 @@ export function GamePage({ onBackHome }: GamePageProps) {
           />
         </div>
 
-        <aside className="hidden lg:sticky lg:top-3 lg:block lg:w-44 lg:shrink-0">
+        <aside className="hidden lg:sticky lg:top-3 lg:block lg:w-52 lg:shrink-0">
           <div className="rounded-xl border border-border bg-card p-3">
             <div className="mb-2 text-center text-xs text-muted-foreground">{modeStatus}</div>
             <ModeSwitch mode={mode} onChange={setMode} />
+            {precisionHint ? (
+              <div className="mt-3 rounded-lg bg-muted px-3 py-2 text-xs leading-5 text-muted-foreground">
+                {precisionHint}
+              </div>
+            ) : null}
           </div>
         </aside>
       </div>
 
       <footer className="mt-auto pb-2 lg:hidden">
+        {precisionHint ? (
+          <div className="mb-2 rounded-xl border border-border bg-card px-3 py-2 text-center text-xs leading-5 text-muted-foreground">
+            {precisionHint}
+          </div>
+        ) : null}
         <div className="mb-2 text-center text-xs text-muted-foreground">{modeStatus}</div>
         <ModeSwitch mode={mode} onChange={setMode} />
       </footer>

@@ -34,6 +34,20 @@ describe('canvas layout', () => {
     expect(layout.cellSize).toBeGreaterThan(20)
   })
 
+  it('compacts 15x15 clue metrics on narrow phones', () => {
+    const layout = calculateBoardLayout({
+      canvasWidth: 378,
+      canvasHeight: 620,
+      gridSize: 15,
+      maxRowClueLength: 8,
+      maxColClueLength: 5,
+    })
+
+    expect(layout.cellSize).toBeGreaterThanOrEqual(20)
+    expect(layout.clueAreaWidth).toBe(54)
+    expect(layout.clueAreaHeight).toBe(61)
+  })
+
   it('allocates wider clue area for longer row clues', () => {
     const shortClueLayout = calculateBoardLayout({
       canvasWidth: 375,
