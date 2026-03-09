@@ -6,6 +6,10 @@ import { puzzle5x5 } from '@/test-fixtures/puzzles'
 import { GameClearDialog } from '@/ui/components/GameClearDialog'
 import * as shareUtils from '@/ui/components/game-share'
 
+vi.mock('@/ui/components/FireworksOverlay', () => ({
+  FireworksOverlay: () => null,
+}))
+
 vi.mock('@/ui/components/game-share', () => ({
   NONOGRAM_SHARE_URL: 'https://gh.zhuangty.com/nonogram/',
   createShareQrDataUrl: vi.fn(),
