@@ -45,11 +45,11 @@ function extractClues(solution: boolean[][]) {
   return { rows, cols }
 }
 
-function createPuzzle(solution: boolean[][]): PuzzleDefinition {
+function createPuzzle(solution: boolean[][], tier = 1): PuzzleDefinition {
   return {
     id: 'test-puzzle',
     seed: 42,
-    tier: 1,
+    tier,
     size: solution.length,
     solution,
     clues: extractClues(solution),
@@ -123,12 +123,29 @@ describe('game-engine', () => {
     expect(nextState.status).toBe('failed')
   })
 
-  it('auto-completes directly affected line', () => {
+  it('does not auto-complete directly affected line on low tiers', () => {
     const puzzle = createPuzzle([
       [true, true, false],
       [false, false, true],
       [true, false, false],
     ])
+    const state = createGameState(puzzle)
+    const first = applyAction(state, { type: 'fill', row: 0, col: 0 }).state
+    const second = applyAction(first, { type: 'fill', row: 0, col: 1 })
+
+    expect(second.result.autoCompleted).toEqual([])
+    expect(second.state.board[0][2]).toBe('unknown')
+  })
+
+  it('supports auto-completion on higher tiers', () => {
+    const puzzle = createPuzzle(
+      [
+        [true, true, false],
+        [false, false, true],
+        [true, false, false],
+      ],
+      3,
+    )
     const state = createGameState(puzzle)
     const first = applyAction(state, { type: 'fill', row: 0, col: 0 }).state
     const second = applyAction(first, { type: 'fill', row: 0, col: 1 })
@@ -139,11 +156,11 @@ describe('game-engine', () => {
     expect(second.state.board[0][2]).toBe('marked-empty')
   })
 
-  it('supports cascading auto-completion across row and column', () => {
+  it('supports cascading auto-completion across row and column on higher tiers', () => {
     const puzzle = createPuzzle([
       [true, true],
       [false, true],
-    ])
+    ], 3)
     const state = createGameState(puzzle)
     const { state: nextState, result } = applyAction(state, {
       type: 'fill',

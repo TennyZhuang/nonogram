@@ -40,11 +40,11 @@ function extractClues(solution: boolean[][]) {
   return { rows, cols }
 }
 
-function createPuzzle(solution: boolean[][]): PuzzleDefinition {
+function createPuzzle(solution: boolean[][], tier = 2): PuzzleDefinition {
   return {
     id: 'integration-custom',
     seed: 7,
-    tier: 2,
+    tier,
     size: solution.length,
     solution,
     clues: extractClues(solution),
@@ -85,9 +85,32 @@ describe('integration game loop', () => {
     expect(useGameStore.getState().game?.livesRemaining).toBe(0)
   })
 
-  it('applies auto-completion after a triggering action', () => {
+  it('does not auto-complete low-tier puzzles after a triggering action', () => {
     const store = useGameStore.getState()
     store.startGame(puzzle5x5)
+
+    store.act({ row: 0, col: 0, type: 'fill' })
+    store.act({ row: 0, col: 1, type: 'fill' })
+    store.act({ row: 0, col: 3, type: 'fill' })
+
+    const board = useGameStore.getState().game?.board
+    expect(board?.[0][2]).toBe('unknown')
+    expect(board?.[0][4]).toBe('unknown')
+  })
+
+  it('still auto-completes higher-tier puzzles after a triggering action', () => {
+    const puzzle = createPuzzle(
+      [
+        [true, true, false, true, false],
+        [true, false, false, false, true],
+        [false, true, true, false, false],
+        [false, false, true, true, false],
+        [true, false, false, true, true],
+      ],
+      3,
+    )
+    const store = useGameStore.getState()
+    store.startGame(puzzle)
 
     store.act({ row: 0, col: 0, type: 'fill' })
     store.act({ row: 0, col: 1, type: 'fill' })
