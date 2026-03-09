@@ -10,6 +10,7 @@ import {
   type BoardColors,
 } from '@/canvas/renderer'
 import {
+  isEmptyState,
   isFilledState,
   type Board as BoardState,
   type InputMode,
@@ -83,6 +84,43 @@ function isPointInsideCancelActionZone(
 
 const CANCEL_ZONE_HOVER_HIT_SCALE = 1.35
 const CANCEL_ZONE_RELEASE_HIT_SCALE = 1.35
+const PRECISION_LOUPE_RADIUS = 2
+const PRECISION_LOUPE_WIDTH = 148
+const PRECISION_LOUPE_HEIGHT = 156
+const PRECISION_LOUPE_MARGIN = 10
+
+interface PrecisionLoupePosition {
+  left: number
+  top: number
+}
+
+function shouldEnablePrecisionAid(puzzle: PuzzleDefinition, layout: BoardLayout): boolean {
+  return puzzle.size >= 15 && (puzzle.tier >= 5 || layout.cellSize <= 20)
+}
+
+function buildPrecisionLoupePosition(
+  point: { x: number; y: number },
+  canvasSize: CanvasSize,
+): PrecisionLoupePosition {
+  const preferredLeft = point.x - PRECISION_LOUPE_WIDTH / 2
+  const preferredTop =
+    point.y > PRECISION_LOUPE_HEIGHT + PRECISION_LOUPE_MARGIN * 2
+      ? point.y - PRECISION_LOUPE_HEIGHT - 18
+      : point.y + 22
+
+  return {
+    left: clamp(
+      preferredLeft,
+      PRECISION_LOUPE_MARGIN,
+      canvasSize.width - PRECISION_LOUPE_WIDTH - PRECISION_LOUPE_MARGIN,
+    ),
+    top: clamp(
+      preferredTop,
+      PRECISION_LOUPE_MARGIN,
+      canvasSize.height - PRECISION_LOUPE_HEIGHT - PRECISION_LOUPE_MARGIN,
+    ),
+  }
+}
 
 function getMaxRowClueLength(puzzle: PuzzleDefinition): number {
   return Math.max(...puzzle.clues.rows.map((clue) => clue.join(' ').length), 1)
@@ -157,10 +195,12 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
   const [activeCell, setActiveCell] = useState<CellCoord | null>(null)
   const [previewStartCell, setPreviewStartCell] = useState<CellCoord | null>(null)
   const [previewPhase, setPreviewPhase] = useState<InputControllerSnapshot['phase']>('idle')
+  const [previewPoint, setPreviewPoint] = useState<{ x: number; y: number } | null>(null)
   const [cancelZoneHighlighted, setCancelZoneHighlightedState] = useState(false)
   const [impactCount, setImpactCount] = useState(0)
   const [debugLogs, setDebugLogs] = useState<string[]>([])
   const [debugActionTip, setDebugActionTip] = useState('')
+  const [isCoarsePointer, setIsCoarsePointer] = useState(false)
 
   const [debugEnabled] = useState(readDebugInputEnabled)
   const autoMarkEnabled = puzzle.tier >= 4
@@ -168,6 +208,39 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
     () => typeof navigator !== 'undefined' && typeof navigator.share === 'function',
     [],
   )
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return
+    }
+
+    const mediaQueries = ['(pointer: coarse)', '(any-pointer: coarse)'].map((query) =>
+      window.matchMedia(query),
+    )
+    const update = () => {
+      setIsCoarsePointer(mediaQueries.some((query) => query.matches))
+    }
+
+    update()
+
+    for (const query of mediaQueries) {
+      if (typeof query.addEventListener === 'function') {
+        query.addEventListener('change', update)
+      } else {
+        query.addListener(update)
+      }
+    }
+
+    return () => {
+      for (const query of mediaQueries) {
+        if (typeof query.removeEventListener === 'function') {
+          query.removeEventListener('change', update)
+        } else {
+          query.removeListener(update)
+        }
+      }
+    }
+  }, [])
 
   useEffect(() => {
     playRef.current = play
@@ -223,6 +296,73 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
     }
     return buildCancelActionZone(previewStartCell, layout, canvasSize)
   }, [canvasSize, layout, previewPhase, previewStartCell])
+
+  const precisionAidEnabled = useMemo(() => shouldEnablePrecisionAid(puzzle, layout), [layout, puzzle])
+  const precisionLoupeFocusCell = useMemo(() => {
+    if (activeCell) {
+      return activeCell
+    }
+    return previewCells[previewCells.length - 1] ?? previewStartCell
+  }, [activeCell, previewCells, previewStartCell])
+  const precisionLoupeAnchor = useMemo(() => {
+    if (!precisionLoupeFocusCell) {
+      return previewPoint
+    }
+    if (previewPoint) {
+      return previewPoint
+    }
+
+    const focusRect = cellToPixel(precisionLoupeFocusCell.row, precisionLoupeFocusCell.col, layout)
+    return {
+      x: focusRect.x + focusRect.width / 2,
+      y: focusRect.y + focusRect.height / 2,
+    }
+  }, [layout, precisionLoupeFocusCell, previewPoint])
+  const showPrecisionLoupe =
+    precisionAidEnabled &&
+    isCoarsePointer &&
+    previewPhase === 'previewing' &&
+    precisionLoupeFocusCell !== null &&
+    precisionLoupeAnchor !== null
+  const precisionLoupePosition = useMemo<PrecisionLoupePosition | null>(() => {
+    if (!showPrecisionLoupe || !precisionLoupeAnchor) {
+      return null
+    }
+    return buildPrecisionLoupePosition(precisionLoupeAnchor, canvasSize)
+  }, [canvasSize, precisionLoupeAnchor, showPrecisionLoupe])
+  const previewCellKeys = useMemo(
+    () => new Set(previewCells.map((cell) => `${cell.row}:${cell.col}`)),
+    [previewCells],
+  )
+  const precisionLoupeCells = useMemo(() => {
+    if (!showPrecisionLoupe || !precisionLoupeFocusCell) {
+      return []
+    }
+
+    const cells: Array<{
+      key: string
+      active: boolean
+      preview: boolean
+      state: BoardState[number][number] | null
+    }> = []
+
+    for (let rowOffset = -PRECISION_LOUPE_RADIUS; rowOffset <= PRECISION_LOUPE_RADIUS; rowOffset += 1) {
+      for (let colOffset = -PRECISION_LOUPE_RADIUS; colOffset <= PRECISION_LOUPE_RADIUS; colOffset += 1) {
+        const row = precisionLoupeFocusCell.row + rowOffset
+        const col = precisionLoupeFocusCell.col + colOffset
+        const withinBounds = row >= 0 && row < puzzle.size && col >= 0 && col < puzzle.size
+
+        cells.push({
+          key: `${row}:${col}`,
+          active: row === precisionLoupeFocusCell.row && col === precisionLoupeFocusCell.col,
+          preview: withinBounds && previewCellKeys.has(`${row}:${col}`),
+          state: withinBounds ? (board[row]?.[col] ?? 'unknown') : null,
+        })
+      }
+    }
+
+    return cells
+  }, [board, previewCellKeys, precisionLoupeFocusCell, puzzle.size, showPrecisionLoupe])
 
   useEffect(() => {
     cancelActionZoneRef.current = cancelActionZone
@@ -296,6 +436,7 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
         setActiveCell(null)
         setPreviewStartCell(null)
         setPreviewPhase('idle')
+        setPreviewPoint(null)
         setImpactCount(0)
       },
     })
@@ -354,6 +495,9 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
       setPreviewStartCell(snapshot.startCell)
       setPreviewPhase(snapshot.phase)
       setImpactCount(snapshot.previewCells.length)
+      if (snapshot.phase === 'idle') {
+        setPreviewPoint(null)
+      }
     },
     [],
   )
@@ -397,6 +541,7 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
       const snapshot = controller.pointerDown(point)
       updateFromSnapshot(snapshot)
       const started = snapshot.phase === 'previewing'
+      setPreviewPoint(started ? point : null)
       setInteractionLock(started)
       appendDebugLog('preview-start', {
         started,
@@ -415,6 +560,7 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
         return
       }
       updateCancelZoneHighlight(point)
+      setPreviewPoint(point)
       updateFromSnapshot(controller.pointerMove(point))
       appendDebugLog('preview-move', {
         x: Math.round(point.x),
@@ -853,6 +999,56 @@ export function Board({ puzzle, board, mode, onBatchCommit }: BoardProps) {
       {impactCount > 1 ? (
         <div className="pointer-events-none absolute left-1/2 top-2 z-10 -translate-x-1/2 rounded-full bg-black/70 px-3 py-1 text-xs text-white">
           影响 {impactCount} 格
+        </div>
+      ) : null}
+
+      {showPrecisionLoupe && precisionLoupePosition && precisionLoupeFocusCell ? (
+        <div
+          data-testid="precision-loupe"
+          aria-hidden="true"
+          className="pointer-events-none absolute z-20 w-[148px] rounded-2xl border border-white/20 bg-black/80 p-3 text-white shadow-2xl backdrop-blur-sm"
+          style={{
+            left: `${precisionLoupePosition.left}px`,
+            top: `${precisionLoupePosition.top}px`,
+          }}
+        >
+          <div className="mb-2 flex items-center justify-between gap-2 text-[10px] text-white/80">
+            <span>{mode === 'fill' ? '填充预览' : '标空预览'}</span>
+            <span>
+              第 {precisionLoupeFocusCell.row + 1} 行 · 第 {precisionLoupeFocusCell.col + 1} 列
+            </span>
+          </div>
+          <div className="grid grid-cols-5 gap-1 rounded-xl bg-white/10 p-1">
+            {precisionLoupeCells.map((cell) => {
+              const previewFill = cell.preview && mode === 'fill'
+              const previewMark = cell.preview && mode === 'mark-empty'
+              const filled = cell.state ? isFilledState(cell.state) : false
+              const empty = cell.state ? isEmptyState(cell.state) : false
+              const isOutOfBounds = cell.state === null
+
+              return (
+                <span
+                  key={cell.key}
+                  className={`flex h-5 w-5 items-center justify-center rounded-[6px] border text-[11px] font-semibold leading-none ${
+                    isOutOfBounds
+                      ? 'border-transparent bg-transparent text-transparent'
+                      : previewFill
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : previewMark
+                          ? 'border-white/50 bg-white/10 text-white'
+                          : filled
+                            ? 'border-primary/80 bg-primary/70 text-transparent'
+                            : empty
+                              ? 'border-white/20 bg-white/5 text-white/70'
+                              : 'border-white/15 bg-white/5 text-transparent'
+                  } ${cell.active ? 'ring-2 ring-amber-300 ring-offset-1 ring-offset-black/70' : ''}`}
+                >
+                  {previewMark || (!cell.preview && empty) ? '×' : '•'}
+                </span>
+              )
+            })}
+          </div>
+          <div className="mt-2 text-center text-[10px] text-white/75">按住拖动可更稳定位</div>
         </div>
       ) : null}
 

@@ -202,3 +202,34 @@ test('滑过取消按钮后离开再抬手会正常提交', async ({ page }) => 
 
   expect(afterBoard).not.toBe(beforeBoard)
 })
+
+
+test('高难度触摸拖动时显示放大定位辅助', async ({ page }) => {
+  await page.setViewportSize({ width: 402, height: 874 })
+  await page.goto('/')
+  await skipOnboardingIfVisible(page)
+  await page.getByRole('button', { name: /D6/ }).click()
+
+  const board = page.getByTestId('game-board-canvas')
+  const box = await board.boundingBox()
+  expect(box).not.toBeNull()
+  if (!box) {
+    return
+  }
+
+  const startX = box.x + box.width * 0.52
+  const startY = box.y + box.height * 0.48
+  const endX = box.x + box.width * 0.62
+  const endY = startY
+
+  await page.mouse.move(startX, startY)
+  await page.mouse.down()
+  await page.mouse.move(endX, endY)
+
+  const loupe = page.getByTestId('precision-loupe')
+  await expect(loupe).toBeVisible()
+  await expect(loupe).toContainText('第')
+
+  await page.mouse.up()
+  await expect(loupe).toBeHidden()
+})
