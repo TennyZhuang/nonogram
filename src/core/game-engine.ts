@@ -69,6 +69,10 @@ function runAutoCompletion(
   state: GameState,
   initialTasks: LineTask[],
 ): AutoCompletedCell[] {
+  if (state.puzzle.tier <= 2) {
+    return []
+  }
+
   const queue: LineTask[] = []
   const queued = new Set<string>()
 
