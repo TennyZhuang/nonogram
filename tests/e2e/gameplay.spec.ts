@@ -21,20 +21,20 @@ test('模式切换按钮可切换为标空', async ({ page }) => {
   await expect(markEmptyButton).toHaveAttribute('aria-pressed', 'true')
 })
 
-
 test('移动端底部主操作不会被音效按钮遮挡', async ({ page }) => {
   await page.setViewportSize({ width: 402, height: 874 })
   await page.goto('/')
 
-  const floatingSoundButton = page.locator('button[title="关闭音效"], button[title="开启音效"]')
-  await expect(floatingSoundButton).toHaveCount(1)
-  await expect(floatingSoundButton).toBeHidden()
+  const floatingSoundButton = page.getByRole('button', {
+    name: /^(关闭音效|开启音效)$/,
+  })
+  await expect(floatingSoundButton).toHaveCount(0)
 
   const nextButton = page.getByRole('button', { name: '下一步' })
   const nextBox = await nextButton.boundingBox()
   expect(nextBox).not.toBeNull()
   if (!nextBox) {
-    return
+    throw new Error('未找到引导页下一步按钮的位置')
   }
 
   await page.mouse.click(nextBox.x + nextBox.width - 4, nextBox.y + nextBox.height - 4)
@@ -47,7 +47,7 @@ test('移动端底部主操作不会被音效按钮遮挡', async ({ page }) => 
   const markEmptyBox = await markEmptyButton.boundingBox()
   expect(markEmptyBox).not.toBeNull()
   if (!markEmptyBox) {
-    return
+    throw new Error('未找到游戏页标空按钮的位置')
   }
 
   await page.mouse.click(

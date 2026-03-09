@@ -50,6 +50,8 @@ export function GameActionMenu({
     action()
   }
 
+  const soundStatusLabel = soundEnabled ? '音效已开启' : '音效已关闭'
+
   return (
     <div ref={containerRef} className="relative">
       <button
@@ -65,20 +67,24 @@ export function GameActionMenu({
       {open ? (
         <div
           role="menu"
-          className="absolute left-0 top-full z-30 mt-2 w-40 rounded-xl border border-border bg-card p-1 shadow-lg"
+          className="absolute left-0 top-full z-30 mt-2 w-44 rounded-xl border border-border bg-card p-1 shadow-lg"
         >
           <button
             type="button"
             role="menuitem"
+            aria-pressed={soundEnabled}
             className="min-h-11 w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-muted"
-            onClick={() => handleAction(onToggleSound)}
+            onClick={onToggleSound}
           >
             {soundEnabled ? '关闭音效' : '开启音效'}
           </button>
+          <div aria-live="polite" className="px-3 pb-1 text-xs text-muted-foreground">
+            {soundStatusLabel}
+          </div>
           <button
             type="button"
             role="menuitem"
-            className="mt-1 min-h-11 w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-muted"
+            className="min-h-11 w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-muted"
             onClick={() => handleAction(onRestart)}
           >
             重新开始
