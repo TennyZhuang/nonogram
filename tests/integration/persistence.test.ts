@@ -117,12 +117,16 @@ describe('persistence integration', () => {
   it('does not restore cleared sessions as active games', async () => {
     const store = useGameStore.getState()
     store.startGame(puzzle5x5)
-    store.batchAct(
-      puzzle5x5.solution.flatMap((row, rowIndex) =>
-        row.flatMap((filled, colIndex) => (filled ? [{ row: rowIndex, col: colIndex }] : [])),
-      ),
-      'fill',
-    )
+
+    for (let row = 0; row < puzzle5x5.size; row += 1) {
+      for (let col = 0; col < puzzle5x5.size; col += 1) {
+        store.act({
+          row,
+          col,
+          type: puzzle5x5.solution[row][col] ? 'fill' : 'mark-empty',
+        })
+      }
+    }
 
     expect(useGameStore.getState().game?.status).toBe('cleared')
 

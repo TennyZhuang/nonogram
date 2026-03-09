@@ -68,21 +68,24 @@ export async function persistNow(): Promise<void> {
 export function startAutoSave(delayMs = 1_000): StopHandle {
   let timeout: number | null = null
 
+  const flush = () => {
+    timeout = null
+    void persistNow().catch(() => {
+      // TODO(v0.2): Add user-facing error hints for storage failures.
+    })
+  }
+
   const schedule = () => {
-    if (timeout) {
-      window.clearTimeout(timeout)
+    if (timeout !== null) {
+      return
     }
-    timeout = window.setTimeout(() => {
-      void persistNow().catch(() => {
-        // TODO(v0.2): Add user-facing error hints for storage failures.
-      })
-    }, delayMs)
+    timeout = window.setTimeout(flush, delayMs)
   }
 
   const unsubscribe = useGameStore.subscribe(() => schedule())
   return () => {
     unsubscribe()
-    if (timeout) {
+    if (timeout !== null) {
       window.clearTimeout(timeout)
       timeout = null
     }
