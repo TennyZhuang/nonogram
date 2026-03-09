@@ -3,9 +3,10 @@ import { useEffect, useMemo, useState } from 'react'
 import type { DifficultyTier } from '@/core/types'
 import { readDebugInputEnabled } from '@/lib/debug-input'
 import { hydrateFromStorage, saveOnLifecycle, startAutoSave } from '@/persistence/sync'
+import { countUnlockedAchievements, useAchievementStore } from '@/store/achievement-store'
 import { useGameStore } from '@/store/game-store'
 import { useSettingsStore } from '@/store/settings-store'
-import { normalizeThemeId } from '@/theme/themes'
+import { DEFAULT_THEME, isThemeUnlocked, normalizeThemeId } from '@/theme/themes'
 import { AchievementsPage } from '@/ui/pages/AchievementsPage'
 import { GamePage } from '@/ui/pages/GamePage'
 import { HomePage } from '@/ui/pages/HomePage'
@@ -14,6 +15,44 @@ import { SettingsPage } from '@/ui/pages/SettingsPage'
 import { SoundToggle } from '@/ui/components/SoundToggle'
 
 type AppPage = 'home' | 'game' | 'achievements' | 'settings' | 'onboarding'
+
+interface RecommendedChallenge {
+  tier: DifficultyTier
+  title: string
+  description: string
+}
+
+function getRecommendedChallenge(unlockedAchievementIds: ReadonlySet<string>): RecommendedChallenge {
+  if (!unlockedAchievementIds.has('first-clear')) {
+    return {
+      tier: 1,
+      title: '先赢一局热身',
+      description: '从 D1 起步，30 秒找回数织手感。',
+    }
+  }
+
+  if (!unlockedAchievementIds.has('first-d5')) {
+    return {
+      tier: 5,
+      title: '冲刺奖励主题',
+      description: '首次通关 D5，可解锁更明快的「赤金」主题。',
+    }
+  }
+
+  if (!unlockedAchievementIds.has('first-d6')) {
+    return {
+      tier: 6,
+      title: '挑战王者难度',
+      description: '把 D6 拿下，夜梅主题就归你。',
+    }
+  }
+
+  return {
+    tier: 4,
+    title: '保持今天的状态',
+    description: '来一局中高难度，把节奏感继续压住。',
+  }
+}
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
@@ -26,9 +65,11 @@ function App() {
     useState<BeforeInstallPromptEvent | null>(null)
   const currentPuzzle = useGameStore((state) => state.currentPuzzle)
   const game = useGameStore((state) => state.game)
+  const elapsedMs = useGameStore((state) => state.elapsedMs)
   const [debugEnabled] = useState(readDebugInputEnabled)
   const startGameByTier = useGameStore((state) => state.startGameByTier)
   const warmupPools = useGameStore((state) => state.warmupPools)
+  const achievements = useAchievementStore((state) => state.achievements)
   const theme = useSettingsStore((state) => state.theme)
   const setTheme = useSettingsStore((state) => state.setTheme)
   const tutorialCompleted = useSettingsStore((state) => state.tutorialCompleted)
@@ -38,7 +79,36 @@ function App() {
 
   const normalizedTheme = normalizeThemeId(theme)
 
-  const canContinue = Boolean(currentPuzzle && game)
+  const unlockedAchievementIds = useMemo(
+    () => new Set(achievements.filter((item) => item.unlocked).map((item) => item.id)),
+    [achievements],
+  )
+  const canContinue = Boolean(currentPuzzle && game && game.status === 'playing')
+  const achievementSummary = useMemo(
+    () => ({
+      unlocked: countUnlockedAchievements(achievements),
+      total: achievements.length,
+    }),
+    [achievements],
+  )
+  const currentSession = useMemo(() => {
+    if (!currentPuzzle || !game || game.status !== 'playing') {
+      return null
+    }
+
+    return {
+      tier: currentPuzzle.tier,
+      size: currentPuzzle.size,
+      elapsedMs,
+      livesRemaining: game.livesRemaining,
+      maxLives: game.maxLives,
+      mistakes: game.mistakes,
+    }
+  }, [currentPuzzle, elapsedMs, game])
+  const recommendedChallenge = useMemo(
+    () => getRecommendedChallenge(unlockedAchievementIds),
+    [unlockedAchievementIds],
+  )
   const buildLabel = useMemo(() => {
     const time = __APP_BUILD_TIME__
     const parsed = new Date(time)
@@ -57,6 +127,16 @@ function App() {
       setTheme(normalizedTheme)
     }
   }, [normalizedTheme, setTheme, theme])
+
+  useEffect(() => {
+    if (theme === DEFAULT_THEME) {
+      return
+    }
+
+    if (!isThemeUnlocked(theme, unlockedAchievementIds)) {
+      setTheme(DEFAULT_THEME)
+    }
+  }, [setTheme, theme, unlockedAchievementIds])
 
   useEffect(() => {
     document.documentElement.dataset.theme = normalizedTheme
@@ -101,6 +181,9 @@ function App() {
     <HomePage
       canContinue={canContinue}
       canInstall={Boolean(deferredInstallPrompt)}
+      currentSession={currentSession}
+      achievementSummary={achievementSummary}
+      recommendedChallenge={recommendedChallenge}
       onContinue={() => setPage('game')}
       onSelectDifficulty={handleStartTier}
       onOpenAchievements={() => setPage('achievements')}

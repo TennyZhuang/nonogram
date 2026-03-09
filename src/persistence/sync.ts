@@ -20,7 +20,7 @@ const TIERS: DifficultyTier[] = [1, 2, 3, 4, 5, 6]
 
 function buildSessionRecord(): ActiveSessionRecord | null {
   const state = useGameStore.getState()
-  if (!state.currentPuzzle || !state.game) {
+  if (!state.currentPuzzle || !state.game || state.game.status !== 'playing') {
     return null
   }
 

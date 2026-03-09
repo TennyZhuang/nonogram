@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+
+import { Sparkles, Trophy } from 'lucide-react'
 
 import { formatElapsed } from '@/core/timer'
 import type { Board, PuzzleDefinition } from '@/core/types'
@@ -24,6 +26,34 @@ interface GameClearDialogProps {
   onNext: () => void
 }
 
+function getResultSummary(
+  puzzle: PuzzleDefinition,
+  mistakes: number,
+  elapsedMs: number,
+): { title: string; description: string } {
+  if (mistakes === 0) {
+    return {
+      title: '漂亮，这是一局干净利落的通关。',
+      description:
+        puzzle.tier >= 5
+          ? '高难局也能零失误，已经很有高手味道了。'
+          : '零失误的节奏很舒服，继续保持这个手感。',
+    }
+  }
+
+  if (elapsedMs < 90_000) {
+    return {
+      title: '这局节奏很顺。',
+      description: '你几乎是一口气把图案完整拉了出来。',
+    }
+  }
+
+  return {
+    title: '稳扎稳打，也是一种漂亮的胜利。',
+    description: '这类题本来就适合慢慢磨，通关本身就是最好的反馈。',
+  }
+}
+
 export function GameClearDialog({
   open,
   puzzle,
@@ -40,6 +70,10 @@ export function GameClearDialog({
   const [qrDataUrl, setQrDataUrl] = useState('')
   const [isGeneratingShare, setIsGeneratingShare] = useState(false)
   const [shareError, setShareError] = useState<string | null>(null)
+  const resultSummary = useMemo(
+    () => getResultSummary(puzzle, mistakes, elapsedMs),
+    [elapsedMs, mistakes, puzzle],
+  )
 
   useEffect(() => {
     if (open) {
@@ -114,8 +148,16 @@ export function GameClearDialog({
         aria-modal="true"
         className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-xl bg-card p-5 shadow-lg"
       >
-        <h2 className="text-lg font-bold">通关成功</h2>
-        <p className="mt-1 text-sm text-muted-foreground">终局棋盘已生成，可直接保存通关截图。</p>
+        <div className="flex items-start gap-3 rounded-xl bg-primary/8 p-4">
+          <div className="rounded-full bg-primary/12 p-2 text-primary">
+            <Trophy className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold">通关成功</h2>
+            <p className="mt-1 text-sm text-muted-foreground">{resultSummary.title}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{resultSummary.description}</p>
+          </div>
+        </div>
 
         <div className="mt-3 grid grid-cols-2 gap-2 rounded-lg border border-border bg-muted/30 p-3 text-sm">
           <div>
@@ -167,6 +209,13 @@ export function GameClearDialog({
           </div>
         </div>
 
+        <div className="mt-3 flex items-start gap-2 rounded-lg bg-muted/40 px-3 py-3 text-xs text-muted-foreground">
+          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          {puzzle.tier < 6
+            ? `想要更刺激？返回首页试试 D${puzzle.tier + 1}。如果只想延续节奏，也可以直接同难度再来一局。`
+            : 'D6 已是当前最高难度。要么继续同难度磨技巧，要么回首页换一种节奏。'}
+        </div>
+
         {shareError ? <p className="mt-2 text-xs text-destructive">{shareError}</p> : null}
 
         <div className="mt-4 grid gap-2">
@@ -183,7 +232,7 @@ export function GameClearDialog({
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
             onClick={onNext}
           >
-            下一题
+            同难度再来一局
           </button>
           <button
             type="button"
